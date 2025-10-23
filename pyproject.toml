@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "bitsandbytes>=0.48.1",
     "docling>=2.57.0",
     "folium>=0.20.0",
     "geopy>=2.4.1",
@@ -28,5 +29,7 @@ dependencies = [
     "selenium>=4.37.0",
     "sentence-transformers>=5.1.1",
     "tavily-python>=0.7.12",
+    "torch>=2.9.0",
+    "transformers>=4.57.1",
     "unstructured>=0.18.15",
 ]

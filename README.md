@@ -30,16 +30,7 @@ docker run -d `
 vector 확장 모듈 자동 로드
 
 
-### 2. pgAdmin 실행  
-```docker run -d --name rag_pgadmin -e PGADMIN_DEFAULT_EMAIL=admin@local.com -e PGADMIN_DEFAULT_PASSWORD=admin -p 5433:5433 dpage/pgadmin4```   
-   
-브라우저에서 http://localhost:5050 접속
-
-Email: admin@local.com   
-Password: admin
-
-
-### 3. pgvector 확장 활성화 (최초 1회만)
+### 2. pgvector 확장 활성화 (최초 1회만)
 ```docker exec -it rag_pg psql -U postgres -d ragdb -c 'CREATE EXTENSION IF NOT EXISTS vector;'```
 
 확인
@@ -47,10 +38,10 @@ Password: admin
 vector 가 보이면 OK 
    
 
-### 4. env 설정 
+### 3. env 설정 
 ```POSTGRES_URL=postgresql://postgres:postgres@localhost:5433/ragdb```
 
-### 5. pgAdmin에서 DB 연결
+### 4. pgAdmin에서 DB 연결
 
 - “Add New Server”
 - Host name/address: host.docker.internal
