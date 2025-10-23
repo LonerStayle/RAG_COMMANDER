@@ -12,6 +12,7 @@ dependencies = [
     "langchain-community>=0.4",
     "langchain-core>=1.0.0",
     "langchain-experimental>=0.0.42",
+    "langchain-mcp-adapters>=0.1.11",
     "langchain-openai>=1.0.0",
     "langchain-tavily>=0.2.12",
     "langgraph>=1.0.0",
