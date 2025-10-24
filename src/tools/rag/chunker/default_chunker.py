@@ -49,10 +49,6 @@ def chunk_with_token(
     return splitter.split_documents(docs)
 
 
-
-
-
-
 # 적응형 청킹 (문서 종류 자동 감지)
 def adaptive_chunker(
     docs: List[Document],
