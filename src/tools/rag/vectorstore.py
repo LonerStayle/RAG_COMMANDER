@@ -5,6 +5,8 @@ from langchain_core.embeddings import Embeddings
 from langchain_community.vectorstores import PGVector
 from dotenv import load_dotenv
 
+TEST_COLLECTION_NAME = "test"
+
 # PGVector 스토어 빌더
 def build_pgvector_store(
     docs: Optional[List[Document]] = None,
@@ -55,4 +57,3 @@ def build_pgvector_store(
         print(f"✅ 새 PGVector 컬렉션 '{collection_name}' 생성 완료")
         return store
 
-TEST_COLLECTION_NAME = "test"
