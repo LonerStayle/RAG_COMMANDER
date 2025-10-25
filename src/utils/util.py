@@ -62,11 +62,11 @@ def attach_auto_keys(cls: Type[T]) -> Type[T]:
             if not k.startswith("_") and not inspect.isroutine(v)
         }
     key_cls = type(
-        "Key",
+        "KEY",
         (),
         {k: k for k in annotations.keys()}
     )
-    setattr(cls, "Key", key_cls)
+    setattr(cls, "KEY", key_cls)
     return cls
 
 

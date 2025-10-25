@@ -1,16 +1,8 @@
-from langgraph.graph.message import MessagesState
+from pydantic import BaseModel, Field
+from typing import Optional
 from utils.util import attach_auto_keys
 
-from pydantic import BaseModel, Field
-from typing import Optional,Dict
-
 @attach_auto_keys
-class MainState(MessagesState):
-    start_input: dict
-    insight_outputs: dict
-    final_report: str
-
-
 class StartConfirmation(BaseModel):
     confirm: bool = Field(
         description="작업을 시작할지 여부입니다. yes 또는 no 중 하나를 입력합니다."
@@ -19,7 +11,7 @@ class StartConfirmation(BaseModel):
     question:str = Field(
         description="보고서 내용을 구체적으로 작성하기 위해 사용자에게 제시할 추가 질문 입니다."
     )
-    
+    # 
     reason: Optional[str] = Field(
         description="confirm 이 False 일 경우, 시작하지 않으려는 이유를 간단히 입력합니다."
     )
@@ -29,6 +21,7 @@ class StartConfirmation(BaseModel):
     )    
 
 # 최초 입력 데이터 (보고서 생성 전 사용자가 직접 입력하는 정보)
+@attach_auto_keys
 class StartInput(BaseModel):
     target_area: str = Field(
         description="조사하려는 주소입니다. 예시: 인천광역시 부평구 부개동 13-5번지 일원",
