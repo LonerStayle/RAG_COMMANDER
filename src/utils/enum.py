@@ -19,7 +19,7 @@ class LLMProfile(StrEnum):
     ANALYSIS = ModelName.GPT_4_1_MINI
     
     # 테스트 끝나면 클로드 사용예정
-    REPORT = ModelName.GPT_4_1_MINI
+    REPORT = ModelName.CLAUDE_SONNET_4_5_20250929
     
     
     
