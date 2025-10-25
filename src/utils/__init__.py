@@ -1,7 +1,7 @@
-from .enum import ModelName
+from .enum import LLMProfile
 from .format_message import show_prompt
 
 __all__ = [
-    "ModelName",
+    "LLMProfile",
     "show_prompt",
 ]
