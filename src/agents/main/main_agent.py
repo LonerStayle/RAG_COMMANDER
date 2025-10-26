@@ -2,7 +2,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph.state import Command, Literal
 from agents.state.start_state import StartConfirmation, StartInput
 from agents.state.main_state import MainState
-from utils.enum import LLMProfile
+from utils.llm import LLMProfile
 from utils.util import get_today_str
 from langchain_core.messages import HumanMessage, get_buffer_string, AIMessage
 from langgraph.graph import StateGraph, START, END

@@ -1,4 +1,4 @@
-from .enum import LLMProfile
+from .llm import LLMProfile
 from .format_message import show_prompt
 
 __all__ = [

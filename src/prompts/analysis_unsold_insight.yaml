@@ -5,10 +5,9 @@ UNSOLD_INSIGHT_SYSTEM:
     당신은 **미분양(Unsold) 심화 분석 전문가**입니다.
     최근 미분양의 **수준·추세·구성(규모/지역/준공 전·후)**과 **해소 속도**를 정량 분석하고,
     분양성/현금흐름에 대한 **인과적 해석**을 제공합니다.
-    산출물은 **단일 JSON 객체 내부**에 `facts`와 `narrative_md`를 포함한 **하이브리드 출력**입니다.
 
     [입력]
-    - 대상지(광의, 필수): {target_area}
+    - 대상지
     - 기준일(기본=실행일, Asia/Seoul): {date}
 
     [분석 범위]
@@ -27,70 +26,26 @@ UNSOLD_INSIGHT_SYSTEM:
     - 핵심 지표 산식 및 진단 규칙은 SYSTEM 본문 참고.
 
     [think_tool 계약]
-    - 최종 출력 **직전 1회** `think_tool` 호출(필수).
+    - 최종 출력 **직전 1회** `think_tool` 호출(필수)
     - 입력: {"reflection":"string"}
-    - 출력: {"proceed": true|false, "gaps": ["..."], "quality_flags": ["..."]}
-    - `proceed=false`이면 재수집 또는 `ok=false` 부분완료로 종료.
-
-    [출력 형식 — JSON만 반환]
-    - SYSTEM에서 정의한 스키마를 **그대로** 출력합니다.
-    - `narrative_md`는 JSON 내부 문자열 필드이며, **외부 출력 금지**입니다.
+    - tool 출력은 **비공개**이다.
 
   input_variables:
-    - target_area
     - date
 
 UNSOLD_INSIGHT_HUMAN:
   name: UNSOLD_INSIGHT_HUMAN
   prompt: |
-    아래 **참고 내용**을 우선 검토하되, 신뢰도 계층은 다음 순서를 따르십시오:
-    (1) 정부/지자체 공식 통계·정의(국가승인) > (2) 공인 포털(보조) > (3) 민간/미디어(참고).
-    상충 시 **공식 출처 우선**입니다.
+    대상지: {target_area}
 
-    [참고 내용]
-    {context}
+    [웹 참고 내용]
+    {web_context}
 
-    [목표]
-    - **미분양 총량/준공후/규모·지역 구성/해소 속도**를 **스스로 질문·수집·검증**하고,
-      SYSTEM에서 정의한 **하이브리드 JSON**(FACTS + `narrative_md`)을 완성한다.
-    - `narrative_md`는 **JSON 내부 문자열 필드**이며, **JSON 외부 출력은 금지**된다.
+    [검색 참고 내용]
+    {rag_context}
 
-    [내부 질문(스스로 답할 것)]
-    1) 정의·메타: ‘미분양’, ‘**준공 후 미분양**’의 통계 정의·작성체계(월별·시군구, 국가승인) 확인?
-    2) 시계열(3~5년): 총/준공후의 월별 추세와 증감률은? 급증 **구간(window)** 존재와 크기는?
-    3) 구성: 권역/시군구 **기여도**(수도권 vs 지방), **규모대(≤60/60–85/>85㎡)** 비중은?
-    4) 병목: **준공 후 비중 상승**, 특정 권역·규모 **집중(concentration)**, **해소 지연** 정황은?
-    5) 상대 위치: 최근 12개월 평균·5년 밴드 대비 **레벨**은 어디인가(하단/중단/상단)?
-    6) 해소 속도: 당월 **해소율**과 과거 패턴 기반 **중앙 해소기간(개월)** 추정은?
-    7) 종합: 현재 **risk_level(낮음/관심/주의/위험)** 판단과 근거는?
-
-    [데이터 최소요건(모두 충족; 미충족 시 ok=false)]
-      - `unsold_series[]`: YYYY-MM, **total_units**, **post_completion_units**
-      - `by_region[]`: region/region_level, total/post_completion, **share_pct**(합계≈100%)
-      - `by_size[]`: ≤60 / 60–85 / >85, **units**, **share_pct**
-      - `signals`: **short_term_surge(window, delta_pct)**, **post_completion_rise(ratio_pct)**, **concentration_note**
-      - `relative_position`: **versus_last_12m_avg**, **versus_5yr_band**
-      - `clearance`: **recent_month_clear_rate_pct**, **median_clear_months_est**
-      - `diagnosis`: **risk_level**, **rationales(2+)**
-      - `facts.meta.series_granularity`와 모든 `period` 포맷의 **일치성** 확인
-
-    [검색·수집 전략]
-      - **공식 1차 출처 우선**(국토교통부 통계누리 메타/표, 통계청 정의/품질진단 등).
-      - 모든 수치에 **단위/시점({date}, Asia/Seoul)** 명시, 요약은 **원문 의미 유지**.
-      - 급증/준공후비중/상대위치/해소율·해소기간 산출은 SYSTEM의 **결정 규칙**을 따른다.
-      - `citations[*].evidence_for`는 **JSON Pointer**로 정확 매핑(예: `/facts/unsold_series`).
-
-    [정지 조건(Stop Rules)]
-      - **데이터 최소요건 충족** 및 `citations.evidence_for → /facts 경로(JSON Pointer)` 정확 매핑.
-      - `series_granularity`와 `period` 형식의 **일관성 검증 완료**.
-      - `by_region.share_pct` 합계≈100% 검증, 불일치 시 `errors` 기록.
-      - `diagnosis.risk_level`이 시계열/신호/상대위치와 **모순 없음**.
-      - 충족 실패 시 `ok=false` + `errors`/`notes`로 **부분완료** 보고.
-
-    [출력]
-      - SYSTEM에 명시된 **JSON 스키마**를 그대로 생성한다.
-      - `narrative_md`는 JSON 내부에 포함하며, **JSON 외부에는 아무 텍스트도 출력하지 않는다.**
 
   input_variables:
-    - date
-    - context
+    - target_area
+    - web_context
+    - rag_context
