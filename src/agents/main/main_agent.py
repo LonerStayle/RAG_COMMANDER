@@ -11,7 +11,7 @@ from agents.analysis.analysis_graph import analysis_graph
 from agents.jung_min_jae.jung_min_jae_agent import report_graph
 from copy import deepcopy
 
-start_llm = ChatOpenAI(model=LLMProfile.START_COMFIRMATION, temperature=0)
+start_llm = LLMProfile.chat_bot_llm()
 messages_key = MainState.KEY.messages
 start_input_key = MainState.KEY.start_input
 analysis_outputs_key = MainState.KEY.analysis_outputs
@@ -60,7 +60,9 @@ def analysis_graph_node(state: MainState) -> MainState:
 
 def jung_min_jae_graph(state: MainState) -> MainState:
     result = report_graph.invoke({"start_input": deepcopy(state[start_input_key]),
-                                  "analysis_outputs": deepcopy(state[analysis_outputs_key])})
+                                  "analysis_outputs": deepcopy(state[analysis_outputs_key]),
+                                  "segment":1
+                                  })
     return {
         "final_report": result["final_report"],
         status_key:"RENDERING"

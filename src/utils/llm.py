@@ -14,32 +14,52 @@ class ModelName(StrEnum):
 
 
 class LLMProfile(StrEnum):
-    DEV_ROUTE = ModelName.GPT_4_1_MINI
+    # 개발자가 사용할 LLM 
+    DEV = ModelName.GPT_4_1_MINI
 
-    START_COMFIRMATION = ModelName.GPT_4_1
+    # 챗봇용 LLM   
+    CHAT_BOT = ModelName.GPT_4_1
 
-    # 테스트 끝나면 GPT 5 사용 예정
+    # 분석용 LLM
     ANALYSIS = ModelName.GPT_5
 
-    # 테스트 끝나면 클로드 사용예정
+    # 보고서 작성용 LLM
     REPORT = ModelName.GPT_5
     
     @staticmethod
-    def loute_llm():
+    def dev_llm():
         return init_chat_model(
-            model=LLMProfile.DEV_ROUTE,
+            model=LLMProfile.DEV,
             temperature=0,
+        )
+    @staticmethod
+    def chat_bot_llm():
+        return init_chat_model(
+            model=LLMProfile.CHAT_BOT,
+            temperature=0,
+        )
+    
+    @staticmethod
+    def chat_llm():
+        return init_chat_model(
+            model=LLMProfile.CHAT_BOT,
+            temperature=0,
+            reasoning_effort="high",
+            verbosity="high",
         )
 
     @staticmethod
     def analysis_llm():
+        
         return init_chat_model(
             model=LLMProfile.ANALYSIS,
             temperature=0,
+            reasoning_effort="high",
+            verbosity="high",
         )
 
     @staticmethod
-    def repoert_llm():
+    def report_llm():
         return init_chat_model(
             model=LLMProfile.REPORT,
             temperature=0,
