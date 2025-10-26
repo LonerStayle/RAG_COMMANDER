@@ -4,7 +4,7 @@ from langchain_core.tools import tool
 from agents.state.start_state import StartInput
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from utils.util import get_today_str
-from utils.enum import LLMProfile
+from utils.llm import LLMProfile
 from prompts import PromptManager, PromptType
 from langgraph.prebuilt import ToolNode
 from langchain.chat_models import init_chat_model
@@ -60,36 +60,84 @@ def think_tool(reflection: str) -> str:
 
 output_key = UnsoldInsightState.KEY.unsold_insight_output
 start_input_key = UnsoldInsightState.KEY.start_input
+web_context_key = UnsoldInsightState.KEY.web_context
 rag_context_key = UnsoldInsightState.KEY.rag_context
 messages_key = UnsoldInsightState.KEY.messages
 target_area_key = StartInput.KEY.target_area
 
 
-llm = init_chat_model(model=LLMProfile.ANALYSIS, temperature=0)
+llm = LLMProfile.analysis_llm()
 tool_list = [think_tool]
 llm_with_tools = llm.bind_tools(tool_list)
 tool_node = ToolNode(tool_list)
 
 
-# 여기 수정 예정..
-def retreiver(state: UnsoldInsightState) -> UnsoldInsightState:
+from langchain_openai import OpenAIEmbeddings
+import json
+from tools.rag.vectorstore import build_pgvector_store, TEST_COLLECTION_NAME
+from perplexity import Perplexity
+
+search_client = Perplexity()
+
+def web_search(state: UnsoldInsightState) -> UnsoldInsightState:
     start_input = state[start_input_key]
-    # start_input 로 RAG 사용했다 치고..
-    return {rag_context_key: "rag_test"}
+    target_area = start_input[target_area_key]
+    queries = [
+        # ── 1) 시계열(총/준공후): 월별 레벨·추세 확인
+        f"{target_area} 미분양 현황 월별 시계열 총량 준공후 구분 site:stat.molit.go.kr",
+        f"공사완료후 미분양현황 2007~ 최근월 통계표 site:stat.molit.go.kr",
+        # ── 2) 지역(시·군·구) 상세: 기여도/집중도 파악
+        f"{target_area} 시군구별 미분양 현황 최근 24개월 site:stat.molit.go.kr",
+        # ── 3) 규모별(면적대) 구성: ≤60 / 60–85 / >85㎡
+        f"{target_area} 규모별 미분양 현황 60㎡ 85㎡ 구간별 최근 월 site:stat.molit.go.kr",
+        # ── 4) 정의·작성체계(메타): ‘미분양/준공 후 미분양’ 용어·작성주기
+        "미분양주택현황보고 통계정보 관련용어 작성주기 작성체계 site:stat.molit.go.kr",
+        # ── 5) 전국/장기 비교(보조): 장기 밴드·상대 위치 참고
+        "연도별 주택 미분양 현황 장기 추이 site:index.go.kr",
+        # ── 6) (선택) 정책 레퍼런스: 준공후 미분양 관련 최근 조치/보도자료
+        f"{get_today_str()} 준공 후 미분양 대책 보도자료 site:molit.go.kr",
+        # ── 7) (선택) 연구/해석 보조: 준공 전 vs 준공 후 의미 차이(학술·정책 연구)
+        "준공 후 미분양 정의 차이점 연구 파일type:pdf site:krihs.re.kr OR site:kci.go.kr",
+    ]
+
+    search_list = []
+    for i in range(0, len(queries), 5):
+        batch = queries[i : i + 5]
+        res = search_client.search.create(query=batch)
+        search_list.append(res)
+        return {**state, web_context_key: search_list}
+
+
+def retreive(state: UnsoldInsightState) -> UnsoldInsightState:
+    # embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+
+    # start_input = state[start_input_key]
+
+    # # start_input 로 RAG 사용했다 치고..
+    # vector_store = build_pgvector_store(
+    #     collection_name=TEST_COLLECTION_NAME, embedding_model=embeddings
+    # )
+    # retriever = vector_store.as_retriever(search_kwargs={"k": 1})
+
+    # query = json.dumps(start_input, ensure_ascii=False)
+    # result = retriever.invoke(query)
+    result = "test"
+    return {rag_context_key: result}
 
 
 def analysis_setting(state: UnsoldInsightState) -> UnsoldInsightState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
-    today_date = get_today_str()
+    web_context = state[web_context_key]
     rag_context = state[rag_context_key]
 
     system_prompt = PromptManager(PromptType.UNSOLD_INSIGHT_SYSTEM).get_prompt(
-        target_area=target_area, date=today_date
+        date=get_today_str()
     )
     humun_prompt = PromptManager(PromptType.UNSOLD_INSIGHT_HUMAN).get_prompt(
-        date=today_date,
-        context=rag_context,
+        target_area=target_area,
+        web_context=web_context,
+        rag_context=rag_context,
     )
 
     messages = [
@@ -99,7 +147,7 @@ def analysis_setting(state: UnsoldInsightState) -> UnsoldInsightState:
     return {messages_key: messages}
 
 
-def agent(state: UnsoldInsightState) -> UnsoldInsightState:    
+def agent(state: UnsoldInsightState) -> UnsoldInsightState:
     messages = state.get(messages_key, [])
     response = llm_with_tools.invoke(messages)
     new_messages = messages + [response]
@@ -116,20 +164,23 @@ def router(state: UnsoldInsightState):
     return "__end__"
 
 
-retreiver_key = "retreiver"
+retreive_key = "retreive"
+web_search_key = "web_search"
 analysis_setting_key = "analysis_setting"
 tools_key = "tools"
 agent_key = "agent"
 graph_builder = StateGraph(UnsoldInsightState)
-graph_builder.add_node(retreiver_key, retreiver)
+graph_builder.add_node(web_search_key, web_search)
+graph_builder.add_node(retreive_key, retreive)
 graph_builder.add_node(analysis_setting_key, analysis_setting)
 graph_builder.add_node(tools_key, tool_node)
 graph_builder.add_node(agent_key, agent)
 
-graph_builder.add_edge(START, retreiver_key)
-graph_builder.add_edge(retreiver_key, analysis_setting_key)
+graph_builder.add_edge(START, retreive_key)
+graph_builder.add_edge(START, web_search_key)
+graph_builder.add_edge(retreive_key, analysis_setting_key)
+graph_builder.add_edge(web_search_key, analysis_setting_key)
 graph_builder.add_edge(analysis_setting_key, agent_key)
-
 graph_builder.add_conditional_edges(agent_key, router, [tools_key, END])
 graph_builder.add_edge(tools_key, agent_key)
 

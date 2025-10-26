@@ -55,16 +55,16 @@ class PromptManager:
         )
         """
         prompt_type = self.type
+        template = self.get_template(prompt_type)  
 
         # 버그가 한번 있었습니다 (문자열 이상한 인식 사건'"reflection"' → 'reflection') - 1
-        cleaned_kwargs = {}
-        for k, v in kwargs.items():
-            key = k.strip('"').strip("'")
-            cleaned_kwargs[key] = v
-            template = self.get_template(prompt_type)
+        cleaned_kwargs = {k.strip('"').strip("'"): v for k, v in kwargs.items()}
 
-        for var in template.input_variables:
-            if var not in kwargs:
+        input_vars = getattr(template, "input_variables", [])
+
+        # 누락된 변수 체크
+        for var in input_vars:
+            if var not in cleaned_kwargs:
                 raise ValueError(
                     f"Missing required input variable for '{prompt_type.name}': '{var}'"
                 )

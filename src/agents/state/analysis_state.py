@@ -9,6 +9,7 @@ class LocationInsightState(TypedDict):
     start_input: dict
     location_insight_output: Optional[str]
     rag_context:Optional[str]
+    web_context:Optional[str]
     messages : Annotated[list[AnyMessage], add_messages]
 
 @attach_auto_keys
@@ -16,6 +17,7 @@ class EconomicInsightState(TypedDict):
     start_input: dict
     economic_insight_output: str
     rag_context:Optional[str]
+    web_context:Optional[str]
     messages : Annotated[list[AnyMessage], add_messages]
 
 @attach_auto_keys
@@ -29,6 +31,7 @@ class NearbyMarketState(TypedDict):
     start_input: dict
     nearby_market_output: str
     rag_context:Optional[str]
+    web_context:Optional[str]
     messages : Annotated[list[AnyMessage], add_messages]
     
 @attach_auto_keys
@@ -36,6 +39,7 @@ class PopulationInsightState(TypedDict):
     start_input: dict
     population_insight_output: str
     rag_context:Optional[str]
+    web_context:Optional[str]
     messages : Annotated[list[AnyMessage], add_messages]
 
 @attach_auto_keys    
@@ -43,6 +47,7 @@ class SupplyDemandState(TypedDict):
     start_input: dict
     supply_demand_output: str
     rag_context:Optional[str]
+    web_context:Optional[str]
     messages : Annotated[list[AnyMessage], add_messages]
     
 @attach_auto_keys
@@ -50,6 +55,7 @@ class UnsoldInsightState(TypedDict):
     start_input: dict
     unsold_insight_output: str
     rag_context:Optional[str]
+    web_context:Optional[str]
     messages : Annotated[list[AnyMessage], add_messages]
 
 

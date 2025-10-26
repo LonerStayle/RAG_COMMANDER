@@ -4,7 +4,7 @@ from langchain_core.tools import tool
 from agents.state.start_state import StartInput
 from langchain_core.messages import SystemMessage, HumanMessage,ToolMessage
 from utils.util import get_today_str
-from utils.enum import LLMProfile
+from utils.llm import LLMProfile
 from langchain.chat_models import init_chat_model
 from prompts import PromptManager, PromptType
 from langgraph.prebuilt import ToolNode    
@@ -60,43 +60,98 @@ def think_tool(reflection: str) -> str:
     
 output_key = SupplyDemandState.KEY.supply_demand_output
 start_input_key = SupplyDemandState.KEY.start_input
+web_context_key = SupplyDemandState.KEY.web_context
 rag_context_key = SupplyDemandState.KEY.rag_context
 messages_key = SupplyDemandState.KEY.messages
 target_area_key = StartInput.KEY.target_area
 
-
-llm = init_chat_model(model=LLMProfile.ANALYSIS, temperature=0)
+llm = LLMProfile.analysis_llm()
 tool_list = [think_tool]
 llm_with_tools = llm.bind_tools(tool_list)
 tool_node = ToolNode(tool_list)
 
-# 여기 수정 예정.. 
-def retreiver(state: SupplyDemandState) -> SupplyDemandState:
+from langchain_openai import OpenAIEmbeddings
+import json
+from tools.rag.vectorstore import build_pgvector_store, TEST_COLLECTION_NAME
+from perplexity import Perplexity
+search_client = Perplexity()
+
+
+def web_search(state: SupplyDemandState) -> SupplyDemandState:
     start_input = state[start_input_key]
-    # start_input 로 RAG 사용했다 치고..
-    return {rag_context_key: "rag_test"}
+    target_area = start_input[target_area_key]
+    queries=[
+        # ── 공급(인허가/분양계획/착공 보조)
+        f"{target_area} 주택건설 인허가 실적 월별 시계열 site:stat.molit.go.kr",
+        f"{target_area} 주택건설 착공 실적 월별 시계열 site:stat.molit.go.kr",
+
+        # ── 입주(준공·입주 물량)
+        f"{target_area} 주택건설 준공 실적 월별 시계열 site:stat.molit.go.kr",
+        f"{target_area} 아파트 입주 예정 물량 최근 36개월 site:applyhome.co.kr",
+
+        # ── 청약(경쟁률/1순위 마감)
+        f"{target_area} 아파트 청약 경쟁률 최근 12~24개월 1순위 마감 여부 site:applyhome.co.kr",
+        f"{target_area} 청약 경쟁률 팝업 산식 조회 site:applyhome.co.kr",
+
+        # ── 미분양(총/준공후)
+        f"{target_area} 미분양 주택 현황 월별 시군구 총량 준공후 구분 site:stat.molit.go.kr",
+
+        # ── 보조지표: 지역 시세/심리(상대 국면 파악)
+        f"{target_area} 한국부동산원 주간 또는 월간 아파트 가격 동향 지수 site:reb.or.kr",
+
+        # ── 보급률(가능 시)
+        f"{target_area} 주택보급률 지표 시도 또는 시군구 최근 연도 site:kosis.kr",
+
+        # ── 통계 메타(PDF 원문, 정의/주기/작성체계)
+        f"미분양주택현황보고 통계 정보 작성주기 작성체계 파일type:pdf site:stat.molit.go.kr OR site:kostat.go.kr",
+        f"주택건설실적통계 인허가 착공 준공 통계정보 보고서 파일type:pdf site:stat.molit.go.kr OR site:k-stat.go.kr"
+    ]
+    
+    search_list = []
+    for i in range(0, len(queries), 5):
+        batch = queries[i:i+5]
+        res = search_client.search.create(query=batch)
+        search_list.append(res)
+        return {**state, web_context_key: search_list}
+
+
+def retreive(state: SupplyDemandState) -> SupplyDemandState:
+    # embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+
+    # start_input = state[start_input_key]
+
+    # # start_input 로 RAG 사용했다 치고..
+    # vector_store = build_pgvector_store(
+    #     collection_name=TEST_COLLECTION_NAME, embedding_model=embeddings
+    # )
+    # retriever = vector_store.as_retriever(search_kwargs={"k": 1})
+
+    # query = json.dumps(start_input, ensure_ascii=False)
+    # result = retriever.invoke(query)
+    result = "test"
+    return {rag_context_key: result}
 
 
 def analysis_setting(state: SupplyDemandState) -> SupplyDemandState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
-    today_date = get_today_str()
+    
+    web_context = state[web_context_key]
     rag_context = state[rag_context_key]
 
     system_prompt = PromptManager(PromptType.SUPPLY_DEMAND_SYSTEM).get_prompt(
-        target_area=target_area, date=today_date
+        date=get_today_str()
     )
     humun_prompt = PromptManager(PromptType.SUPPLY_DEMAND_HUMAN).get_prompt(
         target_area=target_area,
-        date=today_date,
-        context=rag_context,
+        web_context=web_context,
+        rag_context=rag_context,
     )
     
     messages = [
         SystemMessage(content=system_prompt),
         HumanMessage(content=humun_prompt),
     ]
-    
     return {messages_key: messages }
 
 
@@ -116,18 +171,22 @@ def router(state: SupplyDemandState):
     return "__end__"
 
 
-retreiver_key = "retreiver"
+retreive_key = "retreive"
+web_search_key = "web_search"
 analysis_setting_key = "analysis_setting"
 tools_key = "tools"
 agent_key = "agent"
 graph_builder = StateGraph(SupplyDemandState)
-graph_builder.add_node(retreiver_key, retreiver)
+graph_builder.add_node(web_search_key, web_search)
+graph_builder.add_node(retreive_key, retreive)
 graph_builder.add_node(analysis_setting_key, analysis_setting)
 graph_builder.add_node(tools_key, tool_node)
 graph_builder.add_node(agent_key, agent)
 
-graph_builder.add_edge(START, retreiver_key)
-graph_builder.add_edge(retreiver_key, analysis_setting_key)
+graph_builder.add_edge(START, retreive_key)
+graph_builder.add_edge(START, web_search_key)
+graph_builder.add_edge(retreive_key, analysis_setting_key)
+graph_builder.add_edge(web_search_key, analysis_setting_key)
 graph_builder.add_edge(analysis_setting_key, agent_key)
 
 graph_builder.add_conditional_edges(agent_key, router, [tools_key, END])
