@@ -118,4 +118,29 @@ class PromptType(Enum):
         "정민재 이사의 실행 메시지",
     )
     
+    JUNG_MIN_JAE_SUMMARY = (
+        "JUNG_MIN_JAE_SUMMARY",
+        str(Path(get_project_root()) / "src" / "prompts" / "jung_min_jae.yaml"),
+        "정민재 이사의 이전 보고서 페이지 요약 메시지",
+    )
+    
+    
+    JUNG_MIN_JAE_SEGMENT_01 = (
+        "JUNG_MIN_JAE_SEGMENT_01",
+        str(Path(get_project_root()) / "src" / "prompts" / "jung_min_jae.yaml"),
+        "정민재 이사의 보고서 페이지 별 내용 01",
+    )
+    
+    JUNG_MIN_JAE_SEGMENT_02 = (
+        "JUNG_MIN_JAE_SEGMENT_02",
+        str(Path(get_project_root()) / "src" / "prompts" / "jung_min_jae.yaml"),
+        "정민재 이사의 보고서 페이지 별 내용 02",
+    )
+    
+    JUNG_MIN_JAE_SEGMENT_03 = (
+        "JUNG_MIN_JAE_SEGMENT_03",
+        str(Path(get_project_root()) / "src" / "prompts" / "jung_min_jae.yaml"),
+        "정민재 이사의 보고서 페이지 별 내용 03",
+    )
+    
     

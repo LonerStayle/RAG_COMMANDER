@@ -1,11 +1,8 @@
-from langgraph.graph import StateGraph, START, END 
+from langgraph.graph import StateGraph, START, END
 from langchain_core.tools import tool
-from langchain.chat_models import init_chat_model
 from utils.llm import LLMProfile
-from langgraph.prebuilt import ToolNode
 from prompts import PromptManager, PromptType
 from utils.util import get_today_str
-from agents.state.start_state import StartInput
 from langchain_core.messages import SystemMessage, HumanMessage
 from agents.state.jung_min_jae_state import JungMinJaeState
 
@@ -21,11 +18,10 @@ def think_tool(reflection: str) -> str:
         str: 점검 결과 및 개선 제안 Markdown 텍스트.
 
     점검 기준:
-        1. 서술이 근거 중심인가? (수치·분석 결과 기반)
-        2. 독자가 이해할 수 있는가? (용어 난이도·논리 흐름)
-        3. 보고서 간 톤앤매너가 일관적인가?
-        4. 리스크 요인을 명확히 짚었는가?
-        5. 결론이 과도하게 단정적이지 않은가?
+        1. 각 페이지 시작부에 핵심 인사이트의 근거가 명확한가
+        2. 근거로 사용할 데이터를 명확하게 표기했는가
+        3. 근거로 사용할 데이터는 정확한 데이터인가
+        4. 비슷한 스펙의 주변 매매아파트, 분양아파트와 요인비교분석에 현재의 정책, 경제지표, 공급과 수요, 미분양 분석, 인구 분석 등의 내용을 종합해서 분양성과 분양가를 평가 했는가
 
     위 기준에 따라 **보완 의견**을 Markdown 형식으로 작성하고,
     필요 시 개선 제안이나 문장 수정 예시도 함께 포함한다.
@@ -40,80 +36,149 @@ def think_tool(reflection: str) -> str:
         3. 리스크 서술 시 완화 조건(금리/정책/공급 등)을 병기하세요.
     """
     return feedback.strip()
- 
- 
+
+
 analysis_outputs_key = JungMinJaeState.KEY.analysis_outputs
 start_input_key = JungMinJaeState.KEY.start_input
 rag_context_key = JungMinJaeState.KEY.rag_context
 final_report_key = JungMinJaeState.KEY.final_report
+segment_key = JungMinJaeState.KEY.segment
+segment_buffers_key = JungMinJaeState.KEY.segment_buffers
 messages_key = JungMinJaeState.KEY.messages
+review_feedback_key = JungMinJaeState.KEY.review_feedback
 
-llm = LLMProfile.repoert_llm()
-tool_list = [think_tool]
-llm_with_tools = llm.bind_tools(tool_list)
-tool_node = ToolNode(tool_list)
+llm = LLMProfile.report_llm()
 
-# 여기 수정 예정.. 
+
+def segment_directive(seg: int) -> str:
+    if seg == 1:
+        return PromptManager(PromptType.JUNG_MIN_JAE_SEGMENT_01).get_prompt()
+    if seg == 2:
+        return PromptManager(PromptType.JUNG_MIN_JAE_SEGMENT_02).get_prompt()
+    return PromptManager(PromptType.JUNG_MIN_JAE_SEGMENT_03).get_prompt()
+
+dev_llm = LLMProfile.dev_llm()
+def prev_segment_context(state: JungMinJaeState) -> str:
+    seg = state.get(segment_key, 1)
+    if seg <= 1:
+        return 
+    
+    summary_prompt = PromptManager(PromptType.JUNG_MIN_JAE_SUMMARY).get_prompt()
+    buffers = state.get(segment_buffers_key, {})
+    segments = list(buffers.values())
+    response = dev_llm.invoke([
+        SystemMessage(content=summary_prompt),
+        HumanMessage(content=str(segments))
+    ])
+    
+    return f"# 이전 세그먼트 요약/맥락\n{response.content}"
+
+
+# 여기 수정 예정..
 def retreiver(state: JungMinJaeState) -> JungMinJaeState:
     start_input = state[start_input_key]
     # start_input 로 RAG 사용했다 치고..
-    return {rag_context_key: "rag_test"}
+    return {rag_context_key: "rag_test" }
 
 
-def report_setting(state: JungMinJaeState) -> JungMinJaeState:
+def reporting(state: JungMinJaeState) -> JungMinJaeState:
+    seg = state.get(segment_key, 1)
     analysis_outputs = state[analysis_outputs_key]
     start_input = state[start_input_key]
-    rag_context = state[rag_context_key]
+    rag_context = state.get(rag_context_key, "")
+    directive = segment_directive(seg)
+    prev_context = prev_segment_context(state)
 
     system_prompt = PromptManager(PromptType.JUNG_MIN_JAE_SYSTEM).get_prompt(
-        date=get_today_str(), 
+        date=get_today_str()
     )
-    humun_prompt = PromptManager(PromptType.JUNG_MIN_JAE_HUMAN).get_prompt(
-        start_input = start_input,
+
+    human_prompt = PromptManager(PromptType.JUNG_MIN_JAE_HUMAN).get_prompt(
+        start_input=start_input,
         analysis_outputs=analysis_outputs,
         rag_context=rag_context,
     )
     messages = [
         SystemMessage(content=system_prompt),
-        HumanMessage(content=humun_prompt),
+        HumanMessage(content=f"{directive}\n\n{prev_context}\n\n{human_prompt}"),
     ]
-    return {messages_key: messages }
+    return {messages_key: messages}
 
 
 def agent(state: JungMinJaeState) -> JungMinJaeState:
     messages = state.get(messages_key, [])
-    response = llm_with_tools.invoke(messages)
+    seg = state.get(segment_key, 1)
+    buffers = dict(state.get(segment_buffers_key, {}))
 
-    new_state = {**state, messages_key: messages + [response]}
-    new_state[final_report_key] = response.content
+    response = llm.invoke(messages)
+    buffers[f"seg{seg}"] = response.content
+
+    new_state = {**state}
+    new_state[messages_key] = messages + [response]
+    new_state[segment_buffers_key] = buffers
+    if seg <= 3:
+        new_state[segment_key] = seg + 1
     return new_state
+
+def review_with_think(state: JungMinJaeState) -> JungMinJaeState:
+    final_text = state.get(final_report_key, "")
+    feedback = think_tool.invoke({"reflection": final_text})
+    improved = f"{final_text}\n\n---\n\n## 검토 노트(자동 성찰)\n{feedback}"
+    return {review_feedback_key: feedback, final_report_key: improved}
+
+def finalize_merge(state: JungMinJaeState) -> JungMinJaeState:
+    """세그먼트 병합 후, 목차/헤더/중복 간단 정리(필요 시)."""
+    buffers = state.get(segment_buffers_key, {})
+    merged = "\n\n".join([
+        buffers.get("seg1", ""),
+        buffers.get("seg2", ""),
+        buffers.get("seg3", ""),
+    ])
+    # (선택) 간단한 후처리: 헤더 중복/수평선 정리 등
+    merged = merged.replace("\n\n--\n\n", "\n\n---\n\n")  # 구분선 통일
+    return {final_report_key: merged}
 
 
 def router(state: JungMinJaeState):
-    messages = state[messages_key]
-    last_ai_message = messages[-1]
-    if last_ai_message.tool_calls:
-        return "tools"
+    seg = state.get(segment_key, 1)
+
+    if seg <= 3:
+        return "reporting"
+    
+    # seg == 4 (3 초과)
+    if not state.get(final_report_key):
+        return "finalize_merge"
+    
+    if not state.get(review_feedback_key):
+        return "review_with_think"
+
     return "__end__"
 
 
 retreiver_key = "retreiver"
-draft_reporting_key = "draft_reporting"
-tools_key = "tools"
+reporting_key = "reporting"
 agent_key = "agent"
+finalize_key = "finalize_merge"
+review_key = "review_with_think"
+
 graph_builder = StateGraph(JungMinJaeState)
 graph_builder.add_node(retreiver_key, retreiver)
-graph_builder.add_node(draft_reporting_key, report_setting)
-graph_builder.add_node(tools_key, tool_node)
+graph_builder.add_node(reporting_key, reporting)
 graph_builder.add_node(agent_key, agent)
+graph_builder.add_node(finalize_key, finalize_merge)
+graph_builder.add_node(review_key, review_with_think)
 
 graph_builder.add_edge(START, retreiver_key)
-graph_builder.add_edge(retreiver_key, draft_reporting_key)
-graph_builder.add_edge(draft_reporting_key, agent_key)
+graph_builder.add_edge(retreiver_key, reporting_key)
+graph_builder.add_edge(reporting_key, agent_key)
 
-graph_builder.add_conditional_edges(agent_key, router, [tools_key, END])
-graph_builder.add_edge(tools_key, agent_key)
+graph_builder.add_conditional_edges(
+    agent_key,
+    router,
+    [reporting_key, finalize_key, review_key, END],
+)
+graph_builder.add_edge(finalize_key, review_key)
+graph_builder.add_edge(review_key, END)
+
 
 report_graph = graph_builder.compile()
-
-    
