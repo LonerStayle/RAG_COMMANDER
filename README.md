@@ -39,13 +39,12 @@ vector 가 보이면 OK
    
 
 ### 3. env 설정 
-```POSTGRES_URL=postgresql://postgres:postgres@localhost:5433/ragdb```
+```POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/ragdb```
 
 ### 4. pgAdmin에서 DB 연결
-
 - “Add New Server”
 - Host name/address: host.docker.internal
 (Windows Docker Desktop 기준)
-- Port: 5433
+- Port: 5432
 - Username: postgres
 - Password: postgres
