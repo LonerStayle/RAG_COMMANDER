@@ -72,8 +72,9 @@ def attach_auto_keys(cls: Type[T]) -> Type[T]:
 
 from datetime import datetime
 
-def get_today_str(pattern = "%a %b %-d, %Y"):
+def get_today_str(pattern="%a %b %d, %Y"):
     return datetime.now().strftime(pattern)
+
 
 from pathlib import Path
 def get_current_dir() -> Path:
