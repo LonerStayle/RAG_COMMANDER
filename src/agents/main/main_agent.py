@@ -1,4 +1,3 @@
-from langchain_openai import ChatOpenAI
 from langgraph.graph.state import Command, Literal
 from agents.state.start_state import StartConfirmation, StartInput
 from agents.state.main_state import MainState
