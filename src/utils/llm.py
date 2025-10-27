@@ -63,6 +63,4 @@ class LLMProfile(StrEnum):
         return init_chat_model(
             model=LLMProfile.REPORT,
             temperature=0,
-            reasoning_effort="high",
-            verbosity="high",
         )

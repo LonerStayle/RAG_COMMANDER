@@ -19,6 +19,7 @@ dependencies = [
     "langchain-tavily>=0.2.12",
     "langgraph>=1.0.0",
     "pdfminer>=20191125",
+    "perplexityai>=0.17.1",
     "pgvector>=0.4.1",
     "pi-heif>=1.1.1",
     "pillow>=11.3.0",

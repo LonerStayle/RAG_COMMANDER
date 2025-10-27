@@ -2136,6 +2136,23 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/71/a3/155c5cde5f9c0b1069043b2946a93f54a41fd72cc19c6c100f6f2f5bdc15/pdfminer-20191125.tar.gz", hash = "sha256:9e700bc731300ed5c8936343c1dd4529638184198e54e91dd2b59b64a755dc01", size = 4173248, upload-time = "2019-11-25T12:02:21.1Z" }
 
 [[package]]
+name = "perplexityai"
+version = "0.17.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "distro" },
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "sniffio" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/78/e5/6425fcd66751f0556d39cf7c6db97ba5903b119279dd275c936cfb5e004d/perplexityai-0.17.1.tar.gz", hash = "sha256:e75444f3ea307a2414a44ee1f0dda15e8569e4a38b6173b95e4206c42dce338e", size = 111501, upload-time = "2025-10-24T15:22:42.802Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3e/08/6a74f17ff251cd66dc3d7e870cf71b721a3ea1b5939726bdcf5eddf78cbf/perplexityai-0.17.1-py3-none-any.whl", hash = "sha256:2bce8a51d87df2f2398ef4b10e1df15baedd3d8d5f8a8868064d6e8d59b9e9e1", size = 97349, upload-time = "2025-10-24T15:22:41.315Z" },
+]
+
+[[package]]
 name = "pgvector"
 version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2896,6 +2913,7 @@ dependencies = [
     { name = "langchain-tavily" },
     { name = "langgraph" },
     { name = "pdfminer" },
+    { name = "perplexityai" },
     { name = "pgvector" },
     { name = "pi-heif" },
     { name = "pillow" },
@@ -2929,6 +2947,7 @@ requires-dist = [
     { name = "langchain-tavily", specifier = ">=0.2.12" },
     { name = "langgraph", specifier = ">=1.0.0" },
     { name = "pdfminer", specifier = ">=20191125" },
+    { name = "perplexityai", specifier = ">=0.17.1" },
     { name = "pgvector", specifier = ">=0.4.1" },
     { name = "pi-heif", specifier = ">=1.1.1" },
     { name = "pillow", specifier = ">=11.3.0" },
