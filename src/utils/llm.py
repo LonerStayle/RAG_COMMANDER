@@ -1,5 +1,5 @@
 from enum import StrEnum
-from langchain.chat_models import init_chat_model
+from langchain_openai import ChatOpenAI
 
 
 class ModelName(StrEnum):
@@ -15,44 +15,37 @@ class ModelName(StrEnum):
 
 class LLMProfile(StrEnum):
     # 개발자가 사용할 LLM 
-    DEV = ModelName.GPT_4_1_MINI
+    DEV = ModelName.GPT_4_1_MINI.value
 
     # 챗봇용 LLM   
-    CHAT_BOT = ModelName.GPT_4_1
+    CHAT_BOT = ModelName.GPT_4_1.value
 
     # 분석용 LLM
-    ANALYSIS = ModelName.GPT_5
+    ANALYSIS = ModelName.GPT_5.value
 
     # 보고서 작성용 LLM
-    REPORT = ModelName.GPT_5
+    REPORT = ModelName.GPT_5.value
     
     @staticmethod
     def dev_llm():
-        return init_chat_model(
-            model=LLMProfile.DEV,
+        return ChatOpenAI(
+            model=LLMProfile.DEV.value,
             temperature=0,
         )
     @staticmethod
     def chat_bot_llm():
-        return init_chat_model(
-            model=LLMProfile.CHAT_BOT,
+        return ChatOpenAI(
+            model=LLMProfile.CHAT_BOT.value,
             temperature=0,
         )
     
-    @staticmethod
-    def chat_llm():
-        return init_chat_model(
-            model=LLMProfile.CHAT_BOT,
-            temperature=0,
-            reasoning_effort="high",
-            verbosity="high",
-        )
+ 
 
     @staticmethod
     def analysis_llm():
         
-        return init_chat_model(
-            model=LLMProfile.ANALYSIS,
+        return ChatOpenAI(
+            model=LLMProfile.ANALYSIS.value,
             temperature=0,
             reasoning_effort="high",
             verbosity="high",
@@ -60,7 +53,7 @@ class LLMProfile(StrEnum):
 
     @staticmethod
     def report_llm():
-        return init_chat_model(
-            model=LLMProfile.REPORT,
+        return ChatOpenAI(
+            model=LLMProfile.REPORT.value,
             temperature=0,
         )
