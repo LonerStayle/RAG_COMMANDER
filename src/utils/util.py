@@ -80,6 +80,6 @@ from pathlib import Path
 def get_current_dir() -> Path:
     return Path(__file__).resolve().parent if "__file__" in globals() else Path.cwd()
 
-def get_project_root(marker="pyproject.toml"):
+def get_project_root(marker="pyproject.toml"): # 현재 프로젝트의 경로를 가져오기 위해 사용용
     cur = Path(__file__).resolve() if "__file__" in globals() else Path().resolve()
     return next((p for p in [cur, *cur.parents] if (p / marker).exists()), cur)    
