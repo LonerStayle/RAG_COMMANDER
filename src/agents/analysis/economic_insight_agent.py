@@ -140,6 +140,7 @@ def analysis_setting(state: EconomicInsightState) -> EconomicInsightState:
     rag_context = state[rag_context_key]
     web_context = state[web_context_key]
 
+
     system_prompt = PromptManager(PromptType.ECONOMIC_INSIGHT_SYSTEM).get_prompt(
         date=get_today_str()
     )
