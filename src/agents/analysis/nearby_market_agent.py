@@ -66,9 +66,7 @@ tool_list = [think_tool]
 llm_with_tools = llm.bind_tools(tool_list)
 tool_node = ToolNode(tool_list)
 
-from langchain_openai import OpenAIEmbeddings
-import json
-from tools.rag.vectorstore import build_pgvector_store, TEST_COLLECTION_NAME
+
 from perplexity import Perplexity
 search_client = Perplexity()
 

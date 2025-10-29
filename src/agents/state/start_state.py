@@ -5,7 +5,7 @@ from utils.util import attach_auto_keys
 @attach_auto_keys
 class StartConfirmation(BaseModel):
     confirm: bool = Field(
-        description="작업을 시작할지 여부입니다. yes 또는 no 중 하나를 입력합니다."
+        description="작업을 시작할지 여부입니다. true 또는 false 중 하나를 입력합니다."
     )
     
     question:str = Field(
@@ -19,6 +19,7 @@ class StartConfirmation(BaseModel):
     verification:str = Field(
         description="사용자가 필수 정보를 모두 제공해줘서 실제 보고 작성을 시작할 것임을 전달하는 메시지 입니다."
     )    
+
 
 # 최초 입력 데이터 (보고서 생성 전 사용자가 직접 입력하는 정보)
 @attach_auto_keys

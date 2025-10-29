@@ -8,7 +8,6 @@ from utils.llm import LLMProfile
 from langchain_openai import ChatOpenAI
 from prompts import PromptManager, PromptType
 from langgraph.prebuilt import ToolNode
-from tools.rag.vectorstore import build_pgvector_store, TEST_COLLECTION_NAME
 
 
 @tool(parse_docstring=True)
