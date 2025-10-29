@@ -166,3 +166,8 @@ vector 가 보이면 OK
 - Port: 5432
 - Username: postgres
 - Password: postgres
+
+
+## 진섭 개인 노트북 문제 해결 커맨드 
+code --uninstall-extension ms-toolsai.jupyter
+code --install-extension ms-toolsai.jupyter  

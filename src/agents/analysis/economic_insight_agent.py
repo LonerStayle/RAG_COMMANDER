@@ -56,7 +56,6 @@ def think_tool(reflection: str) -> str:
     """
     return f"Reflection recorded: {reflection}"
 
-
 output_key = EconomicInsightState.KEY.economic_insight_output
 start_input_key = EconomicInsightState.KEY.start_input
 web_context_key = EconomicInsightState.KEY.web_context
@@ -69,9 +68,7 @@ tool_list = [think_tool]
 llm_with_tools = llm.bind_tools(tool_list)
 tool_node = ToolNode(tool_list)
 
-from langchain_openai import OpenAIEmbeddings
-import json
-from tools.rag.vectorstore import build_pgvector_store, TEST_COLLECTION_NAME
+
 from perplexity import Perplexity
 search_client = Perplexity()
 def web_search(state: EconomicInsightState) -> EconomicInsightState:
