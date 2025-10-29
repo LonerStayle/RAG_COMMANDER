@@ -135,6 +135,15 @@ def get_one_people_gdp():
 
     return one_people_gdp_dollar
 
+def get_one_people_grdp():
+    return pd.read_excel(
+        get_project_root()
+        / "src"
+        / "data"
+        / "economic_metrics"
+        / "서울 자치구별 GRDP(2018-2022)-최종.xlsx",
+        index_col=0,
+    )
 
 # 각 csv 리턴 
 import pandas as pd
@@ -146,16 +155,18 @@ def get_age_population():
         get_project_root()
         / "src"
         / "data"
+        / "population_insight"
         / "202504_202509_연령별인구현황_월간 - 최종.csv",
         index_col=0,
     )
 
 
-def get_move_people2025():
+def get_move_people2025(): 
     return pd.read_excel(
         get_project_root()
         / "src"
         / "data"
+        / "population_insight"
         / "인구이동_전출입_2025년_1~8월_합산.xlsx"
     )
 
@@ -164,7 +175,10 @@ def get_move_people2024():
         get_project_root()
         / "src"
         / "data"
+        / "population_insight"
         / "인구이동_전출입_2024년(연간) - 최종.xlsx"
     )
+
+
 
 
