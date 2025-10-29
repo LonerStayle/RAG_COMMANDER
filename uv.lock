@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'darwin'",
@@ -3892,7 +3892,11 @@ dependencies = [
     { name = "langchain-openai" },
     { name = "langchain-tavily" },
     { name = "langgraph" },
+<<<<<<< Updated upstream
     { name = "pandas" },
+=======
+    { name = "numpy" },
+>>>>>>> Stashed changes
     { name = "pdfminer" },
     { name = "pdfplumber" },
     { name = "perplexityai" },
@@ -3931,7 +3935,11 @@ requires-dist = [
     { name = "langchain-openai", specifier = ">=1.0.0" },
     { name = "langchain-tavily", specifier = ">=0.2.12" },
     { name = "langgraph", specifier = ">=1.0.0" },
+<<<<<<< Updated upstream
     { name = "pandas", specifier = ">=2.3.3" },
+=======
+    { name = "numpy", specifier = ">=2.3.4" },
+>>>>>>> Stashed changes
     { name = "pdfminer", specifier = ">=20191125" },
     { name = "pdfplumber", specifier = ">=0.11.7" },
     { name = "perplexityai", specifier = ">=0.17.1" },

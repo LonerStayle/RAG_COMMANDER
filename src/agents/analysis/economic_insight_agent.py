@@ -64,6 +64,7 @@ rag_context_key = EconomicInsightState.KEY.rag_context
 target_area_key = StartInput.KEY.target_area
 messages_key = EconomicInsightState.KEY.messages
 
+
 llm = LLMProfile.analysis_llm()
 tool_list = [think_tool]
 llm_with_tools = llm.bind_tools(tool_list)
