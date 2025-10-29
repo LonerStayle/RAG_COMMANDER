@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def retriever_housing_faq(**kwargs):
-    doc_path = get_project_root() / "src" / "data" / "2024 주택청약 FAQ.pdf"
+    doc_path = get_project_root() / "src" / "data" / "housing_pre_promise"/"2024 주택청약 FAQ.pdf"
     documents = load_with_pymupdf(doc_path)
     chunk_list = adaptive_chunker(documents)
     

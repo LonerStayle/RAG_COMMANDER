@@ -3,10 +3,8 @@ from dotenv import load_dotenv
 import os, platform
 
 load_dotenv()
-
 _client = None
 _tools = None
-
 
 def get_exa_config():
     """Exa MCP 예시"""
@@ -46,12 +44,13 @@ def get_exa_config():
             "transport": "stdio",
         }
     
+
 async def get_client():
     global _client
     if _client is None: 
         _client = MultiServerMCPClient(
             {
-                "exa":get_exa_config()
+                "exa": get_exa_config()
             }
         )
 
@@ -59,4 +58,3 @@ async def get_tools():
     global _tools
     if _tools is None:
         client = await get_client()
-        
