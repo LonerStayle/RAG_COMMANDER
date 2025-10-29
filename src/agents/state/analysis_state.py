@@ -29,11 +29,10 @@ class EconomicInsightState(TypedDict):
 class HousingFaqState(TypedDict):
     start_input: dict
     housing_faq_output: str
-    rag_context: Optional[str]
-    messages: Annotated[list[AnyMessage], add_messages]
+    rag_context:Optional[str]
+    messages : Annotated[list[AnyMessage], add_messages]
 
-
-@attach_auto_keys
+@attach_auto_keys    
 class NearbyMarketState(TypedDict):
     start_input: dict
     nearby_market_output: str
