@@ -39,11 +39,8 @@ class LLMProfile(StrEnum):
             temperature=0,
         )
     
- 
-
     @staticmethod
     def analysis_llm():
-        
         return ChatOpenAI(
             model=LLMProfile.ANALYSIS.value,
             temperature=0,

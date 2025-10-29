@@ -22,12 +22,14 @@ def start_confirmation(
 ) -> Command[Literal["start", "__end__"]]:
 
     parser_llm = start_llm.with_structured_output(StartConfirmation)
+
     messages_str = get_buffer_string(messages=state[messages_key])
 
     prompt = PromptManager(PromptType.MAIN_START_CONFIRMATION).get_prompt(
         messages=messages_str
     )
     response: StartConfirmation = parser_llm.invoke([HumanMessage(content=prompt)])
+    
 
     if response.confirm == False:
         return Command(
@@ -83,4 +85,4 @@ graph_builder.add_node(jung_min_jae_key, jung_min_jae_graph)
 graph_builder.add_edge(START, start_confirmation_key)
 graph_builder.add_edge(start_key, analysis_graph_key)
 graph_builder.add_edge(analysis_graph_key, jung_min_jae_key)
-graph_builder.add_edge(analysis_graph_key, END)
+graph_builder.add_edge(jung_min_jae_key, END)
