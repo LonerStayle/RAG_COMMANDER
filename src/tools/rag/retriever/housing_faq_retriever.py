@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def retriever_housing_faq():
-    emb = OpenAIEmbeddings(model="text-embedding-3-small")
+    emb = OpenAIEmbeddings(model="text-embedding-3-large")
     connection_url = os.getenv("POSTGRES_URL")
 
     # 기존 collection 불러오기
