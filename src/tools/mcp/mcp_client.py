@@ -1,4 +1,4 @@
-from langchain_mcp_adapters import MultiServerMCPClient
+from langchain_mcp_adapters.client import MultiServerMCPClient
 from dotenv import load_dotenv
 import os, platform
 
@@ -53,8 +53,11 @@ async def get_client():
                 "exa": get_exa_config()
             }
         )
+    return _client
 
 async def get_tools():
     global _tools
     if _tools is None:
         client = await get_client()
+        _tools = await client.get_tools()
+    return _tools
