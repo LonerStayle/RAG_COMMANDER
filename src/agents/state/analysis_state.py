@@ -45,8 +45,8 @@ class NearbyMarketState(TypedDict):
 class PopulationInsightState(TypedDict):
     start_input: dict
     population_insight_output: str
-    rag_context: Optional[str]
-    web_context: Optional[str]
+    age_population_context: Optional[str]
+    move_population_context: Optional[str]
     messages: Annotated[list[AnyMessage], add_messages]
 
 
