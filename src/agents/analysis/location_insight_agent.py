@@ -8,6 +8,8 @@ from utils.llm import LLMProfile
 from langchain_openai import ChatOpenAI
 from prompts import PromptManager, PromptType
 from langgraph.prebuilt import ToolNode
+from tools.kostat_api import get_move_population
+
 
 
 @tool(parse_docstring=True)
@@ -79,22 +81,7 @@ def web_search(state: LocationInsightState) -> LocationInsightState:
     target_area = start_input[target_area_key]
     total_units = start_input[total_units_key]
     queries=[
-            # 1) 학교/통학: 실보행 시간·거리·통학로 위험요소(공식/지자체·교육청·지도 우선)
-            f"{target_area} 초등학교 최근접 실보행 거리 분 미터 통학로 안전 보행자도로 횡단보도 site:go.kr OR site:sc.go.kr OR site:gg.go.kr 지도",
-            # 2) 지하철/버스 접근: 역세권(도보 10분), 버스정류장 거리·노선 다변성
-            f"{target_area} 지하철역 출구 도보 10분 이내 여부 실보행 분 거리 m 버스정류장 거리 노선 환승 급행 site:seoul.go.kr OR site:gg.go.kr 지도",
-            # 3) 1km 생활편의 POI 집계: 마트·병원·은행·공공시설(공식/포털지도)
-            f"{target_area} 반경 1km 마트 병원 은행 공공시설 개수 위치 목록 공식 지도 통계",
-            # 4) 환경/혐오시설: 공원·수변 접근 + 소각장 매립장 변전소 고압선 소음원 거리/영향
-            f"{target_area} 공원 수변 산책로 접근성 및 소각장 매립장 변전소 송전선 소음원 위치 거리 영향 보고",
-            # 5) 개발호재(단기 실현 위주): 노선/역 신설·도로·상업/공공시설 - 단계(계획/인허가/착공/개통 예정)·ETA
-            f"{target_area} 개발 호재 신규 노선 역 신설 도로 확장 상업 공공 복합 인허가 착공 개통 예정 ETA site:go.kr OR site:mlit.go.kr OR site:seoul.go.kr 보도자료 공고",
-            # 6) 통근 접근성: 러시아워 기준 강남 여의도 판교 예상 소요시간(근거 포함)
-            f"{target_area} 러시아워 출퇴근 시간 강남 여의도 판교 대중교통 환승 기준 소요시간 근거",
-            # 7) 학원가·교육 수요 보조: 학원가 밀집·학군 키워드(대단지/세대수도 함께 언급)
-            f"{target_area} 학원가 밀집 학군 형성 수요 특징 아파트 세대수 {total_units} 규모 주변 교육 인프라 분석",
-            # 8) PDF/공식자료 필터(있으면 가점): 계획서·보도자료·보고서 위주
-            f"{target_area} 파일type:pdf 개발 계획 보도자료 보고서 site:go.kr OR site:mlit.go.kr OR site:seoul.go.kr",
+            
     ]
     
     search_list = []
