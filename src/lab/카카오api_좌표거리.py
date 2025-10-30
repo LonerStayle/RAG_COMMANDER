@@ -43,7 +43,7 @@ def search_nearby_facilities(x, y, category_code, radius=3000):
     - MT1: 대형마트
     - HP8: 병원
     - BK9: 은행
-    - OL7: 공원
+    - OL7: 주유소소
     """
     url = "https://dapi.kakao.com/v2/local/search/category.json"
     headers = {"Authorization": f"KakaoAK {KAKAO_API_KEY}"}
