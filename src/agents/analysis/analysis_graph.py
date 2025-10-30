@@ -3,7 +3,7 @@
 from agents.state.analysis_state import AnalysisGraphState
 from langgraph.graph import StateGraph, START, END
 
-from agents.analysis.economic_insight_agent import economic_insight_graph
+from agents.analysis.policy_agent import policy_graph
 from agents.analysis.housing_faq_agent import housing_faq_graph
 from agents.analysis.location_insight_agent import location_insight_graph
 from agents.analysis.nearby_market_agent import nearby_market_graph
@@ -32,7 +32,7 @@ def make_transform(agent_name: str):
         },
     }
 graph_builder = StateGraph(AnalysisGraphState)    
-graph_builder.add_node(economic_insight_key, economic_insight_graph, transform=make_transform(economic_insight_key))
+graph_builder.add_node(economic_insight_key, policy_graph, transform=make_transform(economic_insight_key))
 graph_builder.add_node(housing_faq_key, housing_faq_graph, transform=make_transform(housing_faq_key))
 graph_builder.add_node(location_insight_key, location_insight_graph, transform=make_transform(location_insight_key))
 graph_builder.add_node(nearby_market_key, nearby_market_graph, transform=make_transform(nearby_market_key))
