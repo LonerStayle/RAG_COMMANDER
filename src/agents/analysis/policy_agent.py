@@ -1,5 +1,5 @@
 from langgraph.graph import StateGraph, START, END
-from agents.state.analysis_state import EconomicInsightState
+from agents.state.analysis_state import PolicyState
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from utils.llm import LLMProfile
@@ -56,12 +56,12 @@ def think_tool(reflection: str) -> str:
     """
     return f"Reflection recorded: {reflection}"
 
-output_key = EconomicInsightState.KEY.economic_insight_output
-start_input_key = EconomicInsightState.KEY.start_input
-web_context_key = EconomicInsightState.KEY.web_context
-rag_context_key = EconomicInsightState.KEY.rag_context
+output_key = PolicyState.KEY.economic_insight_output
+start_input_key = PolicyState.KEY.start_input
+web_context_key = PolicyState.KEY.web_context
+rag_context_key = PolicyState.KEY.rag_context
 target_area_key = StartInput.KEY.target_area
-messages_key = EconomicInsightState.KEY.messages
+messages_key = PolicyState.KEY.messages
 
 
 llm = LLMProfile.analysis_llm()
@@ -72,7 +72,7 @@ tool_node = ToolNode(tool_list)
 
 from perplexity import Perplexity
 search_client = Perplexity()
-def web_search(state: EconomicInsightState) -> EconomicInsightState:
+def web_search(state: PolicyState) -> PolicyState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
     date_str = get_today_str()
@@ -116,7 +116,7 @@ def web_search(state: EconomicInsightState) -> EconomicInsightState:
         search_list.append(res)
         return {**state, web_context_key: search_list}
 
-def retreive(state: EconomicInsightState) -> EconomicInsightState:
+def retreive(state: PolicyState) -> PolicyState:
     # embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 
     # start_input = state[start_input_key]
@@ -132,7 +132,7 @@ def retreive(state: EconomicInsightState) -> EconomicInsightState:
     result = "test"
     return {rag_context_key: result}
 
-def analysis_setting(state: EconomicInsightState) -> EconomicInsightState:
+def analysis_setting(state: PolicyState) -> PolicyState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
     rag_context = state[rag_context_key]
@@ -154,7 +154,7 @@ def analysis_setting(state: EconomicInsightState) -> EconomicInsightState:
     return {messages_key: messages}
 
 
-def agent(state: EconomicInsightState) -> EconomicInsightState:
+def agent(state: PolicyState) -> PolicyState:
     messages = state.get(messages_key, [])
     response = llm_with_tools.invoke(messages)
     new_messages = messages + [response]
@@ -163,7 +163,7 @@ def agent(state: EconomicInsightState) -> EconomicInsightState:
     return new_state
 
 
-def router(state: EconomicInsightState):
+def router(state: PolicyState):
     messages = state[messages_key]
     last_ai_message = messages[-1]
     if last_ai_message.tool_calls:
@@ -176,7 +176,7 @@ web_search_key = "web_search"
 analysis_setting_key = "analysis_setting"
 tools_key = "tools"
 agent_key = "agent"
-graph_builder = StateGraph(EconomicInsightState)
+graph_builder = StateGraph(PolicyState)
 graph_builder.add_node(web_search_key, web_search)
 graph_builder.add_node(retreive_key, retreive)
 graph_builder.add_node(analysis_setting_key, analysis_setting)

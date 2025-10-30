@@ -16,7 +16,7 @@ class LocationInsightState(TypedDict):
 
 
 @attach_auto_keys
-class EconomicInsightState(TypedDict):
+class PolicyState(TypedDict):
     start_input: dict
     economic_insight_output: str
     rag_context: Optional[str]
