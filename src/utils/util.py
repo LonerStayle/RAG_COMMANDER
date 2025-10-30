@@ -86,3 +86,10 @@ def get_project_root(marker="pyproject.toml"): # 현재 프로젝트의 경로�
 
 def get_data_dir(): 
     return get_project_root() / "src" / "data"
+
+
+# import os, sys
+# from pathlib import Path
+
+# src_path = Path(os.getcwd()).resolve().parents[1]  
+# sys.path.append(str(src_path))

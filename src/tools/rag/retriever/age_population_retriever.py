@@ -13,7 +13,7 @@ def age_population_retriever(question):
     emb = OpenAIEmbeddings(model="text-embedding-3-large")
     store = PGVector(
         collection_name=AGE_POPULATION_KEY,
-        embedding_functions=emb,
+        embedding_function=emb,
         connection_string=POSTGRES_URL,
     )
     retriever = store.as_retriever(seach_type={"k": 1})

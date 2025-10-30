@@ -192,4 +192,4 @@ graph_builder.add_edge(analysis_setting_key, agent_key)
 graph_builder.add_conditional_edges(agent_key, router, [tools_key, END])
 graph_builder.add_edge(tools_key, agent_key)
 
-economic_insight_graph = graph_builder.compile()
+policy_graph = graph_builder.compile()
