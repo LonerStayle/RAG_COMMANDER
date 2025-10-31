@@ -21,11 +21,11 @@ class LLMProfile(StrEnum):
     CHAT_BOT = ModelName.GPT_4_1.value
 
     # 분석용 LLM
-    ANALYSIS = ModelName.GPT_5.value
+    ANALYSIS = ModelName.GPT_4_1.value
 
     # 보고서 작성용 LLM
     REPORT = ModelName.GPT_5.value
-    
+
     @staticmethod
     def dev_llm():
         return ChatOpenAI(
@@ -44,8 +44,8 @@ class LLMProfile(StrEnum):
         return ChatOpenAI(
             model=LLMProfile.ANALYSIS.value,
             temperature=0,
-            reasoning_effort="high",
-            verbosity="high",
+            # reasoning_effort="high",
+            # verbosity="high",
         )
 
     @staticmethod
