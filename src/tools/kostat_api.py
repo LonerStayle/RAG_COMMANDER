@@ -84,10 +84,30 @@ adm_dict = {
 
 # 10년 이상 노후도
 def get_10_year_after_house(gu_address: str):
+    
+    llm_res = LLMProfile.dev_llm().invoke(
+    f"""
+    당신은 대한민국 서울특별시 자치구를 찾아주는 도우미 입니다. 
+    에이전트 흐름중 사용하고 있습니다. 주소 질문에 특정 자치구만 찾아서 
+    그부분만 출력해주시면 됩니다.
+    
+    [강력 지침]
+    - 자치구 말이외에 절대 다른말을 하지마세요
+    - 자치구만 말씀하세요
+    
+    [예시]
+    1. "서울특별시 종로구" -> "종로구"
+    2. "서울 강동구 서초동" -> "강남구
+    
+    질문: {gu_address}
+    """
+    )
+    
+    
     HOUSE_URL = "https://sgisapi.kostat.go.kr/OpenAPI3/stats/house.json"
     params = {
         "year": "2020",  # 기준연도 (2015~2023)
-        "adm_cd": [adm_dict[gu_address]],  # 행정구역 코드 (서울특별시)
+        "adm_cd": [adm_dict[llm_res.content]],  # 행정구역 코드 (서울특별시)
         "low_search": "0",
         # 10년 이상들 조회
         "const_year": ["06", "07", "08", "09", "10", "11"],

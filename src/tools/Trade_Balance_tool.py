@@ -35,7 +35,13 @@ def fetch_trade_balance_rows():
 
     return rows
 
-
+# 서울>강북지역
+# 서울>강남지역
+# 서울>강북지역>도심권
+# 서울>강남지역>서남권
+# 서울>강남지역>동남권
+# 서울>강북지역>동북권
+# 서울>강북지역>서북권
 def get_trade_balance(address: str) -> str:
     trimmed = (address or "").strip()
     if not trimmed:
