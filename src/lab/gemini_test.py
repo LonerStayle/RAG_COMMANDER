@@ -6,7 +6,32 @@ import os
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 response = client.models.generate_content(
-    model="gemini-2.5-pro", contents="""
+    model="gemini-2.5-pro", contents=
+        """
+    <CONTEXT>
+    주소:송파구 마천동 299-23
+    규모: 1000세대
+    타입: 84m²
+    </CONTEXT>
+    <GOAL>
+    <CONTEXT> 주변 분양호재를 <OUTPUT>을 참조해서 json 형식으로 출력해주세요
+    </GOAL>
+    <OUTPUT>
+    {
+  "분양호재": [
+    {
+      "name": "",
+      "location": "",
+      "description": "",
+      "status": ""
+    },
+  ]
+}
+    </OUTPUT>
+    """)
+print(response.text)
+
+"""
     <CONTEXT>
     주소:서울 강남구 언주로 711
     규모: 1000세대
@@ -45,5 +70,3 @@ response = client.models.generate_content(
     </OUTPUT>
 
     """
-)
-print(response.text)
