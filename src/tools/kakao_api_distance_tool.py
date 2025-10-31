@@ -1,10 +1,15 @@
 import os
 import requests
 from dotenv import load_dotenv
+
 load_dotenv()
 
 KAKAO_BASE_URL = "https://dapi.kakao.com"
 DEFAULT_RADIUS = 3000
+
+"""
+주소를 좌표로 변환하고 좌표를 기준으로 주변 입지를 검색하는 도구구
+"""
 
 
 def _load_api_key():
@@ -123,3 +128,21 @@ if __name__ == "__main__":
     sample_address = "서울특별시 송파구 마천동 299-23"
     profile = get_location_profile(sample_address)
     print(profile)
+
+"""
+[사용예시]
+
+import sys
+from pathlib import Path
+
+# 프로젝트 루트를 Python 경로에 추가
+project_root = Path(__file__).parent / "RAG_COMMANDER"  # 프로젝트 경로에 맞게 수정
+sys.path.insert(0, str(project_root / "src"))
+
+from tools import get_location_profile
+
+# 사용
+result = get_location_profile("서울특별시 강남구 역삼동")
+print(result)
+
+"""

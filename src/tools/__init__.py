@@ -9,6 +9,7 @@ from .kostat_api import (
     get_move_population,
 )
 from .maps import address_geo_code
+from .kakao_api_distance_tool import get_location_profile
 
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     "get_one_people_grdp",
     "get_move_population",
     "address_geo_code",
+    "get_location_profile",
 ]
