@@ -8,10 +8,40 @@ PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
 client = Perplexity(api_key=PERPLEXITY_API_KEY) # Automatically uses PERPLEXITY_API_KEY
 
 response = client.chat.completions.create(
-    model="sonar-deep-research",
+    model="sonar-reasoning-pro",
     messages=[
         {"role": "user", "content": 
         """
+    <CONTEXT>
+    주소:송파구 마천동 299-23
+    규모: 1000세대
+    타입: 84m²
+    </CONTEXT>
+    <GOAL>
+    <CONTEXT> 주변 분양호재를 <OUTPUT>을 참조해서 json 형식으로 출력해주세요
+    </GOAL>
+    <RULE>
+    다른 말은 다 생략하고 <OUTPUT> 형식으로 출력해 주세요
+    </RULE>
+    <OUTPUT>
+    {
+  "분양호재": [
+    {
+      "name": "",
+      "location": "",
+      "description": "",
+      "status": ""
+    },
+  ]
+}
+    </OUTPUT>
+    """}
+    ]
+)
+
+print(response.choices[0].message.content)
+
+"""
     <CONTEXT>
     주소:송파구 마천동 299-23
     규모: 1000세대
@@ -32,9 +62,4 @@ response = client.chat.completions.create(
     거리:
     비고:
     </OUTPUT>
-
-    """}
-    ]
-)
-
-print(response.choices[0].message.content)
+"""
