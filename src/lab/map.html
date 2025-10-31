@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    
+    <meta charset="UTF-8" />
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <title>지도 - 서울특별시 강남구 테헤란로 231</title>
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -16,6 +17,7 @@
     
             <meta name="viewport" content="width=device-width,
                 initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <meta name="description" content="서울특별시 강남구 테헤란로 231 위치를 표시하는 인터랙티브 지도" />
             <style>
                 #map_47ad99420fcc3b522415d772f8f1bffa {
                     position: relative;
@@ -43,6 +45,49 @@
                 left:0;
                 }
             </style>
+            
+            <!-- 접근성 스타일 개선 -->
+            <style>
+                /* 키보드 포커스 표시 개선 */
+                .folium-map:focus {
+                    outline: 3px solid #005fcc;
+                    outline-offset: 2px;
+                }
+                
+                /* 색상 대비 개선 - Leaflet 컨트롤 버튼 */
+                .leaflet-control-zoom a {
+                    background-color: #ffffff;
+                    color: #333333;
+                    border: 2px solid rgba(0,0,0,0.2);
+                }
+                
+                .leaflet-control-zoom a:hover {
+                    background-color: #f4f4f4;
+                    color: #000000;
+                }
+                
+                /* 팝업 접근성 개선 */
+                .leaflet-popup-content-wrapper {
+                    background-color: #ffffff;
+                    color: #333333;
+                }
+                
+                /* 스킵 링크 추가 (선택사항) */
+                .skip-link {
+                    position: absolute;
+                    top: -40px;
+                    left: 0;
+                    background: #000000;
+                    color: #ffffff;
+                    padding: 8px;
+                    text-decoration: none;
+                    z-index: 10000;
+                }
+                
+                .skip-link:focus {
+                    top: 0;
+                }
+            </style>
 
             <script>
                 L_NO_TOUCH = false;
@@ -52,10 +97,40 @@
         
 </head>
 <body>
+    <!-- 스킵 링크: 키보드 사용자를 위한 메인 콘텐츠로 건너뛰기 -->
+    <a href="#map_47ad99420fcc3b522415d772f8f1bffa" class="skip-link">지도로 바로가기</a>
     
+    <main role="main" id="main-content">
+        <section aria-labelledby="map-heading">
+            <h1 id="map-heading" class="sr-only">위치 지도</h1>
+            <div 
+                class="folium-map" 
+                id="map_47ad99420fcc3b522415d772f8f1bffa"
+                role="application"
+                aria-label="서울특별시 강남구 테헤란로 231 위치를 표시하는 인터랙티브 지도"
+                aria-describedby="map-instructions"
+                tabindex="0"
+            ></div>
+            <div id="map-instructions" class="sr-only">
+                지도를 조작하려면 화살표 키를 사용하세요. 확대/축소는 + 및 - 버튼을 사용하거나 마우스 휠을 사용할 수 있습니다.
+            </div>
+        </section>
+    </main>
     
-            <div class="folium-map" id="map_47ad99420fcc3b522415d772f8f1bffa" ></div>
-        
+    <!-- 스크린 리더 전용 텍스트 스타일 -->
+    <style>
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+    </style>
 </body>
 <script>
     
@@ -65,6 +140,9 @@
                 {
                     center: [37.5036315, 127.0412486],
                     crs: L.CRS.EPSG3857,
+                    keyboard: true,  // 키보드 네비게이션 활성화
+                    keyboardPanOffset: 80,  // 키보드로 이동할 때 오프셋
+                    keyboardZoomOffset: 1,  // 키보드로 확대/축소할 때 오프셋
                     ...{
   "zoom": 15,
   "zoomControl": true,
@@ -101,17 +179,32 @@
             var marker_2dcd4d269e5c859c4fa416150cf38f87 = L.marker(
                 [37.5036315, 127.0412486],
                 {
+                    alt: "서울특별시 강남구 테헤란로 231 위치 마커",
+                    title: "서울특별시 강남구 테헤란로 231"
 }
             ).addTo(map_47ad99420fcc3b522415d772f8f1bffa);
+            
+            // 마커에 ARIA 속성 추가
+            marker_2dcd4d269e5c859c4fa416150cf38f87.on('add', function() {
+                var iconElement = marker_2dcd4d269e5c859c4fa416150cf38f87.getElement();
+                if (iconElement) {
+                    iconElement.setAttribute('role', 'img');
+                    iconElement.setAttribute('aria-label', '서울특별시 강남구 테헤란로 231 위치 마커');
+                    iconElement.setAttribute('tabindex', '0');
+                }
+            });
         
     
         var popup_8af25972af4051725b73e8865d8ef0de = L.popup({
   "maxWidth": "100%",
+  "closeButton": true,  // 닫기 버튼 표시
+  "autoPan": true,  // 자동 팬
+  "className": "accessible-popup"  // 접근성 클래스 추가
 });
 
         
             
-                var html_71e7ebbdfbaccbaaeadea6bc5f4eb933 = $(`<div id="html_71e7ebbdfbaccbaaeadea6bc5f4eb933" style="width: 100.0%; height: 100.0%;">서울특별시 강남구 테헤란로 231</div>`)[0];
+                var html_71e7ebbdfbaccbaaeadea6bc5f4eb933 = $(`<div id="html_71e7ebbdfbaccbaaeadea6bc5f4eb933" style="width: 100.0%; height: 100.0%;" role="dialog" aria-label="위치 정보"><strong>주소:</strong> 서울특별시 강남구 테헤란로 231</div>`)[0];
                 popup_8af25972af4051725b73e8865d8ef0de.setContent(html_71e7ebbdfbaccbaaeadea6bc5f4eb933);
             
         
