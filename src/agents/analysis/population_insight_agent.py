@@ -41,6 +41,7 @@ def think_tool(reflection: str) -> str:
 
 output_key = PopulationInsightState.KEY.population_insight_output
 start_input_key = PopulationInsightState.KEY.start_input
+# age_population_context_key = PopulationInsightState.KEY.age_population_context
 age_population_context_key = PopulationInsightState.KEY.age_population_context
 move_population_context_key = PopulationInsightState.KEY.move_population_context
 messages_key = PopulationInsightState.KEY.messages
@@ -53,7 +54,6 @@ llm_with_tools = llm.bind_tools(tool_list)
 tool_node = ToolNode(tool_list)
 
 from perplexity import Perplexity
-
 search_client = Perplexity()
 
 
@@ -69,7 +69,6 @@ def move_population_retrieve(state: PopulationInsightState) -> PopulationInsight
     
     start_input = state[start_input_key] 
     target_area = start_input[target_area_key]
-    print("사업지",target_area)
     docs = get_move_population(target_area)
     return {
         move_population_context_key: docs 

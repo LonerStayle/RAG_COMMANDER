@@ -100,6 +100,7 @@ def _compare_interest_rates():
     return data_json
 
 import json
+#  {'date': '2025-09', 'kr_rate': 2.5, 'us_rate': 4.22},
 def get_rate():
     result = _compare_interest_rates()
     result["data"] = sorted(result["data"], key=lambda x: x["date"], reverse=True)

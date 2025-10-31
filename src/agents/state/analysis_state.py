@@ -54,8 +54,17 @@ class PopulationInsightState(TypedDict):
 class SupplyDemandState(TypedDict):
     start_input: dict
     supply_demand_output: str
-    rag_context: Optional[str]
-    web_context: Optional[str]
+    year10_after_house: Optional[str]
+    jeonse_price: Optional[str]
+    sale_price: Optional[str]
+    trade_balance: Optional[str]
+    use_kor_rate: Optional[str]
+    home_mortgage: Optional[str]
+    one_people_gdp: Optional[str]
+    one_people_grdp:Optional[str]
+    housing_sales_volume: Optional[str]
+    planning_move: Optional[str]
+    
     messages: Annotated[list[AnyMessage], add_messages]
 
 
