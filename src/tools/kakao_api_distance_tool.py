@@ -8,7 +8,7 @@ KAKAO_BASE_URL = "https://dapi.kakao.com"
 DEFAULT_RADIUS = 3000
 
 """
-주소를 좌표로 변환하고 좌표를 기준으로 주변 입지를 검색하는 도구구
+주소를 좌표로 변환하고 좌표를 기준으로 주변 입지를 검색하는 도구
 """
 
 

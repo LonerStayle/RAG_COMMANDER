@@ -85,7 +85,7 @@ def web_search(state: LocationInsightState) -> LocationInsightState:
     ]
     
     search_list = []
-    for i in range(0, len(queries), 5):
+    for i in range(0, len(queries), 5): # 질문을 5개씩 끊어서 
         batch = queries[i:i+5]
         res = search_client.search.create(query=batch)
         search_list.append(res)
