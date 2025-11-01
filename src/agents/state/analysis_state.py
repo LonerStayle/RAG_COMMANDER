@@ -65,6 +65,7 @@ class SupplyDemandState(TypedDict):
     one_people_grdp:Optional[str]
     housing_sales_volume: Optional[str]
     planning_move: Optional[str]
+    pre_pomise_competition: Optional[str]
     
     messages: Annotated[list[AnyMessage], add_messages]
 

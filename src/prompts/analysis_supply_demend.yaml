@@ -74,6 +74,9 @@ SUPPLY_DEMAND_HUMAN:
     [입주 예정 물량]
     {planning_move}
 
+    [해당 지역 근처 청약 경쟁률]
+    {pre_pomise_competition}
+    
   input_variables:
     - target_area
     - date
@@ -87,3 +90,4 @@ SUPPLY_DEMAND_HUMAN:
     - one_people_grdp
     - housing_sales_volume
     - planning_move
+    - pre_pomise_competition

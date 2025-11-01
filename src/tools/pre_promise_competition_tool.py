@@ -40,7 +40,6 @@ def get_all_data():
     df_competition = pd.DataFrame(competition_data.get("data", []))
     df_detail = pd.DataFrame(detail_data.get("data", []))
 
-    print(df_competition)
     # 두 데이터 합치기
     df_merged = df_competition.merge(
         df_detail, on=["HOUSE_MANAGE_NO", "PBLANC_NO"], how="inner"

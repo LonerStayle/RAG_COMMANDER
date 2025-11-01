@@ -9,6 +9,7 @@ from langchain.chat_models import init_chat_model
 from prompts import PromptManager, PromptType
 from langgraph.prebuilt import ToolNode
 import json
+import asyncio
 
 
 @tool(parse_docstring=False)
@@ -17,25 +18,25 @@ def think_tool(reflection: str) -> str:
     [역할]
     당신은 공급과 수요 정리 전문가의 내부 반성·점검(Reflection) 담당자입니다.
     최종 보고서에 들어갈 본문(Markdown)을 쓰기 직전에, 데이터 품질·시계열 해석·핵심 수치·리스크·보고서용 한 줄 메시지를 짧고 구조적으로 요약해 think_tool에 기록합니다. 이 반성문은 내부용이며, 최종 보고서에 직접 노출되지 않습니다.
-    
+
     [언제 호출할 것인지]
     - 데이터 수집/정제 → 핵심 수치 산출 → 시계열 해석을 마친 직후 1회 호출(필수)
     - 추가 데이터로 추세가 바뀌면 갱신 시마다 1회 재호출(선택)
-    
+
     [강력 지시]
     - 해당 지역에 관련된 내용만 기록
-    - 허상 가정,출처 수치 금지 
+    - 허상 가정,출처 수치 금지
     - 다음 단계(보고서 에이전트)가 바로 쓸 수 있는 한 줄 핵심 메시지 포함
-    
+
     [나쁜 예]
     - “경제가 좋아진듯함. 분위기 좋음.”(수치·기간·단위·근거 없음)
     - “인근 해운대의 GRDP는 이렇다~”(대상 지역 외 서술)
     - “향후 집값 상승 확실.”(근거 없는 단정)
-    
+
     [검증 체크리스트]
-    - 정량 수치가 어긋난 것 이 있는가? 
+    - 정량 수치가 어긋난 것 이 있는가?
     - GPT가 시계열 판단하기에 좋은 형식으로 되어있는가?
-    - 잘못된 내용은 없는가?    
+    - 잘못된 내용은 없는가?
     """
     return f"Reflection recorded: {reflection}"
 
@@ -54,6 +55,7 @@ one_people_gdp_key = SupplyDemandState.KEY.one_people_gdp
 one_people_grdp_key = SupplyDemandState.KEY.one_people_grdp
 housing_sales_volume_key = SupplyDemandState.KEY.housing_sales_volume
 planning_move_key = SupplyDemandState.KEY.planning_move
+pre_pomise_competition_key = SupplyDemandState.KEY.pre_pomise_competition
 
 llm = LLMProfile.analysis_llm()
 tool_list = [think_tool]
@@ -66,7 +68,8 @@ search_client = Perplexity()
 
 from tools.kostat_api import get_10_year_after_house
 
-#10년 이상 노후도
+
+# 10년 이상 노후도
 def year10_after_house(state: SupplyDemandState) -> SupplyDemandState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
@@ -76,16 +79,25 @@ def year10_after_house(state: SupplyDemandState) -> SupplyDemandState:
     year10_house_cnt = get_10_year_after_house(target_area)[0]["house_cnt"]
     return {year10_after_house_key: year10_house_cnt}
 
+
 def supply_housing(state: SupplyDemandState) -> SupplyDemandState:
     return {}
 
-def pre_pomise_competition_tool(state: SupplyDemandState) -> SupplyDemandState:
-    return {}
+
+# 청약 경쟁률
+from tools.pre_promise_competition_tool_v2 import pre_promise
+async def pre_pomise_competition(state: SupplyDemandState) -> SupplyDemandState:
+    start_input = state[start_input_key]
+    target_area = start_input[target_area_key]
+    result = await pre_promise(target_area)
+    return {pre_pomise_competition_key: result}
+
 
 from tools.rag.retriever.sale_price_retriever import sale_price_retrieve
 from tools.rag.retriever.jeonse_price_retriever import jeonse_price_retrieve
 
-#매매가/전세가
+
+# 매매가/전세가
 def sale_and_jeonse_price_ratio(state: SupplyDemandState) -> SupplyDemandState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
@@ -102,7 +114,8 @@ def sale_and_jeonse_price_ratio(state: SupplyDemandState) -> SupplyDemandState:
 
 from tools.Trade_Balance_tool import get_trade_balance
 
-#매매수급지수 
+
+# 매매수급지수
 def trade_balance(state: SupplyDemandState) -> SupplyDemandState:
     # 서울>강북지역
     # 서울>강남지역
@@ -116,7 +129,8 @@ def trade_balance(state: SupplyDemandState) -> SupplyDemandState:
     target_area = start_input[target_area_key]
     seoul_balance = get_trade_balance("서울")
 
-    llm_result = LLMProfile.dev_llm().invoke( f"""
+    llm_result = LLMProfile.dev_llm().invoke(
+        f"""
         {seoul_balance}\n\n
         
         [질문]
@@ -127,34 +141,41 @@ def trade_balance(state: SupplyDemandState) -> SupplyDemandState:
         [강력 지침]
         - 불필요한 말을 하지마십시오
         - 위의 내용 중 {target_area}에 해당되는 내용만 추출해서 말씀하십시오          
-        """)
+        """
+    )
 
     return {trade_balance_key: llm_result.content}
 
+
 from tools.rag.retriever.planning_move_retriever import planning_move_retrieve
 
-# 입주 예정 물량 
+
+# 입주 예정 물량
 def planning_move(state: SupplyDemandState) -> SupplyDemandState:
     # '입주예정월: 202601\n지역: 서울\n사업유형: 임대\n주소: 서울특별시 강북구 수유동 47-52\n주택명: 수유동47-52(청년안심주택)\n세대수: 426',
     start_input = state[start_input_key]
-    target_area = start_input[target_area_key]    
-    
-    return {
-        planning_move_key:planning_move_retrieve(target_area)
-    }
-    
+    target_area = start_input[target_area_key]
 
-from tools.rag.retriever.housing_sales_volume_retriever import housing_sales_volume_retrieve
-#매매 거래량 
+    return {planning_move_key: planning_move_retrieve(target_area)}
+
+
+from tools.rag.retriever.housing_sales_volume_retriever import (
+    housing_sales_volume_retrieve,
+)
+
+
+# 매매 거래량
 def housing_sales_volume(state: SupplyDemandState) -> SupplyDemandState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
     volumes = housing_sales_volume_retrieve(target_area)
-    
-    
-    return {housing_sales_volume_key: volumes} 
+
+    return {housing_sales_volume_key: volumes}
+
 
 from tools.kor_usa_rate import get_rate
+
+
 # 금리
 def use_kor_rate(state: SupplyDemandState) -> SupplyDemandState:
     # {'date': '2025-09', 'kr_rate': 2.5, 'us_rate': 4.22}
@@ -163,6 +184,8 @@ def use_kor_rate(state: SupplyDemandState) -> SupplyDemandState:
 
 
 from tools.rag.retriever.home_mortgage_retriever import home_mortgage_retrieve
+
+
 # 주택담보금리
 def get_home_mortgage(state: SupplyDemandState) -> SupplyDemandState:
     # ' 2025-08-01\n대출평균(연%): 4.06\n가계대출(연%): 4.17\n주택담보대출(연%): 3.96',
@@ -172,15 +195,16 @@ def get_home_mortgage(state: SupplyDemandState) -> SupplyDemandState:
 from tools.kostat_api import get_one_people_gdp
 from tools.rag.retriever.one_people_grdp_retriever import one_people_grdp_retrieve
 
+
 # gdp 혹은 grdp
 def get_gdp_and_grdp(state: SupplyDemandState) -> SupplyDemandState:
     start_input = state[start_input_key]
-    target_area = start_input[target_area_key]    
+    target_area = start_input[target_area_key]
     # '2018': 36791700,
     # '2019': 37006320,
     get_one_people_gdp()
-    
-    #강남구\n2018_당해년가격: 78135292000000...
+
+    # 강남구\n2018_당해년가격: 78135292000000...
     one_people_grdp_retrieve(target_area)
     return {
         one_people_gdp_key: get_one_people_gdp(),
@@ -188,12 +212,10 @@ def get_gdp_and_grdp(state: SupplyDemandState) -> SupplyDemandState:
     }
 
 
-
-
 def analysis_setting(state: SupplyDemandState) -> SupplyDemandState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
-    
+
     year10_after_house = state[year10_after_house_key]
     jeonse_price = state[jeonse_price_key]
     sale_price = state[sale_price_key]
@@ -204,22 +226,23 @@ def analysis_setting(state: SupplyDemandState) -> SupplyDemandState:
     one_people_grdp = state[one_people_grdp_key]
     housing_sales_volume = state[housing_sales_volume_key]
     planning_move = state[planning_move_key]
+    pre_pomise_competition = state[pre_pomise_competition_key]
 
     system_prompt = PromptManager(PromptType.SUPPLY_DEMAND_SYSTEM).get_prompt()
     humun_prompt = PromptManager(PromptType.SUPPLY_DEMAND_HUMAN).get_prompt(
         target_area=target_area,
         date=get_today_str(),
-        year10_after_house = year10_after_house,
-        jeonse_price = jeonse_price,
-        sale_price = sale_price,
-        trade_balance = trade_balance,
-        use_kor_rate = use_kor_rate,
-        home_mortgage = home_mortgage,
-        one_people_gdp = one_people_gdp,
-        one_people_grdp = one_people_grdp,
-        housing_sales_volume = housing_sales_volume,
-        planning_move = planning_move,
-        
+        year10_after_house=year10_after_house,
+        jeonse_price=jeonse_price,
+        sale_price=sale_price,
+        trade_balance=trade_balance,
+        use_kor_rate=use_kor_rate,
+        home_mortgage=home_mortgage,
+        one_people_gdp=one_people_gdp,
+        one_people_grdp=one_people_grdp,
+        housing_sales_volume=housing_sales_volume,
+        planning_move=planning_move,
+        pre_pomise_competition=pre_pomise_competition,
     )
 
     messages = [
@@ -245,6 +268,9 @@ def router(state: SupplyDemandState):
         return "tools"
     return "__end__"
 
+
+pre_pomise_competition_key = "pre_pomise_competition"
+
 year10_after_house_key = "year10_after_house"
 sale_and_jeonse_price_ratio_key = "sale_and_jeonse_price_ratio"
 trade_balance_key = "trade_balance"
@@ -263,7 +289,7 @@ tools_key = "tools"
 agent_key = "agent"
 graph_builder = StateGraph(SupplyDemandState)
 
-
+graph_builder.add_node(pre_pomise_competition_key, pre_pomise_competition)
 graph_builder.add_node(year10_after_house_key, year10_after_house)
 graph_builder.add_node(sale_and_jeonse_price_ratio_key, sale_and_jeonse_price_ratio)
 graph_builder.add_node(trade_balance_key, trade_balance)
@@ -277,6 +303,7 @@ graph_builder.add_node(analysis_setting_key, analysis_setting)
 graph_builder.add_node(tools_key, tool_node)
 graph_builder.add_node(agent_key, agent)
 
+graph_builder.add_edge(START, pre_pomise_competition_key)
 graph_builder.add_edge(START, year10_after_house_key)
 graph_builder.add_edge(START, sale_and_jeonse_price_ratio_key)
 graph_builder.add_edge(START, trade_balance_key)
@@ -286,6 +313,7 @@ graph_builder.add_edge(START, use_kor_rate_key)
 graph_builder.add_edge(START, get_home_mortgage_key)
 graph_builder.add_edge(START, get_gdp_and_grdp_key)
 
+graph_builder.add_edge(pre_pomise_competition_key, analysis_setting_key)
 graph_builder.add_edge(year10_after_house_key, analysis_setting_key)
 graph_builder.add_edge(sale_and_jeonse_price_ratio_key, analysis_setting_key)
 graph_builder.add_edge(trade_balance_key, analysis_setting_key)
