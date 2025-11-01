@@ -29,7 +29,7 @@ DETAIL_URL = (
 
 def get_all_data():
     """API에서 모든 경쟁률 데이터 가져오기"""
-    params = {"page": 2, "perPage": 1000, "serviceKey": SERVICE_KEY}
+    params = {"page": 1, "perPage": 1000, "serviceKey": SERVICE_KEY}
 
     response = requests.get(COMPETITION_URL, params=params)
     competition_data = response.json()
