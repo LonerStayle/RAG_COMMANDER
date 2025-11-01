@@ -2,12 +2,11 @@ from langgraph.graph import StateGraph, START, END
 from agents.state.analysis_state import PopulationInsightState
 from langchain_core.tools import tool
 from agents.state.start_state import StartInput
-from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
+from langchain_core.messages import SystemMessage, HumanMessage
 from utils.util import get_today_str
 from utils.llm import LLMProfile
 from prompts import PromptManager, PromptType
 from langgraph.prebuilt import ToolNode
-from tools.rag.retriever.age_population_retriever import age_population_retriever
 from tools.kostat_api import get_move_population
 
 @tool(parse_docstring=False)
@@ -41,7 +40,6 @@ def think_tool(reflection: str) -> str:
 
 output_key = PopulationInsightState.KEY.population_insight_output
 start_input_key = PopulationInsightState.KEY.start_input
-# age_population_context_key = PopulationInsightState.KEY.age_population_context
 age_population_context_key = PopulationInsightState.KEY.age_population_context
 move_population_context_key = PopulationInsightState.KEY.move_population_context
 messages_key = PopulationInsightState.KEY.messages
@@ -56,20 +54,22 @@ tool_node = ToolNode(tool_list)
 from perplexity import Perplexity
 search_client = Perplexity()
 
-
-def age_population_retrieve(state: PopulationInsightState) -> PopulationInsightState:
+from tools.rag.retriever.age_population_retriever import age_population_retrieve
+def age_population(state: PopulationInsightState) -> PopulationInsightState:
     start_input = state[start_input_key] 
     target_area = start_input[target_area_key]
-    docs = age_population_retriever(target_area)
+    docs = age_population_retrieve(target_area)
+    print("연령층 분포",docs)
     return {
         age_population_context_key: docs
     }
 
-def move_population_retrieve(state: PopulationInsightState) -> PopulationInsightState: 
+def move_population(state: PopulationInsightState) -> PopulationInsightState: 
     
     start_input = state[start_input_key] 
     target_area = start_input[target_area_key]
     docs = get_move_population(target_area)
+    print("인구 이동",docs)
     return {
         move_population_context_key: docs 
     }
@@ -122,8 +122,8 @@ analysis_setting_key = "analysis_setting"
 tools_key = "tools"
 agent_key = "agent"
 graph_builder = StateGraph(PopulationInsightState)
-graph_builder.add_node(age_population_retrieve_key, age_population_retrieve)
-graph_builder.add_node(move_population_retrieve_key, move_population_retrieve)
+graph_builder.add_node(age_population_retrieve_key, age_population)
+graph_builder.add_node(move_population_retrieve_key, move_population)
 graph_builder.add_node(analysis_setting_key, analysis_setting)
 graph_builder.add_node(tools_key, tool_node)
 graph_builder.add_node(agent_key, agent)

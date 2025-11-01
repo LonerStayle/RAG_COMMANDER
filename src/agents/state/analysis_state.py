@@ -18,9 +18,9 @@ class LocationInsightState(TypedDict):
 @attach_auto_keys
 class PolicyState(TypedDict):
     start_input: dict
-    economic_insight_output: str
-    rag_context: Optional[str]
-    web_context: Optional[str]
+    policy_output: str
+    national_context: Optional[str]
+    region_context: Optional[str]
     messages: Annotated[list[AnyMessage], add_messages]
     my_tool: str
 
@@ -54,6 +54,7 @@ class PopulationInsightState(TypedDict):
 class SupplyDemandState(TypedDict):
     start_input: dict
     supply_demand_output: str
+    
     year10_after_house: Optional[str]
     jeonse_price: Optional[str]
     sale_price: Optional[str]

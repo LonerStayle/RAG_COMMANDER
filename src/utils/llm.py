@@ -21,7 +21,7 @@ class LLMProfile(StrEnum):
     CHAT_BOT = ModelName.GPT_4_1.value
 
     # 분석용 LLM
-    ANALYSIS = ModelName.GPT_4_1_MINI.value
+    ANALYSIS = ModelName.GPT_4_1.value
 
     # 보고서 작성용 LLM
     REPORT = ModelName.GPT_5.value

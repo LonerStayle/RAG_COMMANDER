@@ -88,14 +88,14 @@ def _parse_article(article_url):
     content = body_box.get_text("\n", strip=True) if body_box else ""
 
     return {
-        "url": article_url,
+        # "url": article_url,
         "title": title,
         "date": date_text,
         "content": content,
     }
 
 
-def collect_articles(max_page: int = MAX_PAGE):
+def _collect_articles(max_page: int = MAX_PAGE):
     session = requests.Session()
     listing_url = urljoin(BASE_URL, LIST_PATH)
 
@@ -140,21 +140,50 @@ def collect_articles(max_page: int = MAX_PAGE):
 
     return articles
 
+from utils.llm import LLMProfile
+def collect_articles_result():
+    articles = _collect_articles()
+    print(articles)
+    llm = LLMProfile.dev_llm().invoke(
+        f"""
+        당신은 부동산 정책 뉴스를 JSON 목록으로 만든 것 중에 각 원소마다 데이터 형식은 똑같이 유지한채 
+        각 뉴스의 content 라고 적힌 키값의 내용을 변경해서 출력하는 역할을 맡고 있습니다.
 
-def build_output_path(base_dir=DATA_ROOT):
-    base_dir = Path(base_dir)
-    base_dir.mkdir(parents=True, exist_ok=True)
-    today = datetime.now().strftime("%Y%m%d")
-    return base_dir / f"policy_factors_{today}.json"
+        [목표]
+        JSON 목록을 유지한채 각 뉴스안의 content의 값을 수정하는 것입니다. 
+        - 정책만 이야기하도록 수정해주세요.
+        - 불필요한 미래전망 예상이나 주관적인 내용은 제거해주시고 정책 내용만 남겨주세요
+        
+        [추가 지침]
+        - title 키 데이터에 이상한 글 이있으면 title도 같이 수정 해주세요. 
+            - 예시: '\u200b\u200b\' 와 같이 인코딩 안된것 같은 부분
+        
+        [강력 지침]
+        - 절대 JSON 파일 외에 다른 말을 하지마세요
+        - 인삿말 및 마지막말 같은걸 절대 하지마세요
+
+        [JSON 파일]
+        {articles}
+        """
+    )
+    result = json.loads(llm.content)
+    
+    return result
+
+# def build_output_path(base_dir=DATA_ROOT):
+#     base_dir = Path(base_dir)
+#     base_dir.mkdir(parents=True, exist_ok=True)
+#     today = datetime.now().strftime("%Y%m%d")
+#     return base_dir / f"policy_factors_{today}.json"
 
 
-def save_articles(records, file_path):
-    with Path(file_path).open("w", encoding="utf-8") as file:
-        json.dump(records, file, ensure_ascii=False, indent=2)
+# def save_articles(records, file_path):
+#     with Path(file_path).open("w", encoding="utf-8") as file:
+#         json.dump(records, file, ensure_ascii=False, indent=2)
 
 
-def export_policy_factors(max_page: int = MAX_PAGE, base_dir=DATA_ROOT):
-    articles = collect_articles(max_page=max_page)
-    output_path = build_output_path(base_dir=base_dir)
-    save_articles(articles, output_path)
-    return output_path
+# def export_policy_factors(max_page: int = MAX_PAGE, base_dir=DATA_ROOT):
+#     articles = collect_articles(max_page=max_page)
+#     output_path = build_output_path(base_dir=base_dir)
+#     save_articles(articles, output_path)
+#     return output_path

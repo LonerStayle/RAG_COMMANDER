@@ -20,7 +20,9 @@ POLICY_SYSTEM:
     - 시계열 판단이 확실히 될 수 있도록 만들어주십시오.
     - 주관적인 판단을 얘기 하지마세요.
     - 절대 인삿말이나 마지막 말을 첨부하지 마십시오 
+    - 최종 보고서 작성 에이전트의 모델을 GPT-5를 사용할 예정입니다. GPT-5 가 최고의 효율을 낼 수 있는 정리로 만들어주십시오.
     - ``` 으로 감싸거나 답변 첫부분에 markdown 라는 말을 넣지 마세요
+    - 마음대로 분양가나 분양성와 관련된 결론을 만들지 마십시오
 
 POLICY_HUMAN:
   name: POLICY_HUMAN
@@ -32,7 +34,7 @@ POLICY_HUMAN:
     [국가 정책 뉴스모음]
     {national_news_context}
 
-    [지역 부동산 정책 뉴스모음]
+    [지역 관련 부동산 정책 뉴스모음]
     {region_news_context}
 
   input_variables:
