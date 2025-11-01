@@ -28,7 +28,7 @@ def one_people_grdp_retrieve(address: str):
         / "src"
         / "data"
         / "economic_metrics"
-        / "서울 자치구별 GRDP(2018-2022)-최종.csv"
+        / "서울_자치구별_1인당_GRDP.csv"
     )
 
     loader = load_csv_loader(path)

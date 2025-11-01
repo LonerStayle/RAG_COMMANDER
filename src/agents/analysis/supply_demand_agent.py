@@ -193,17 +193,33 @@ def get_gdp_and_grdp(state: SupplyDemandState) -> SupplyDemandState:
 def analysis_setting(state: SupplyDemandState) -> SupplyDemandState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
+    
+    year10_after_house = state[year10_after_house_key]
+    jeonse_price = state[jeonse_price_key]
+    sale_price = state[sale_price_key]
+    trade_balance = state[trade_balance_key]
+    use_kor_rate = state[use_kor_rate_key]
+    home_mortgage = state[home_mortgage_key]
+    one_people_gdp = state[one_people_gdp_key]
+    one_people_grdp = state[one_people_grdp_key]
+    housing_sales_volume = state[housing_sales_volume_key]
+    planning_move = state[planning_move_key]
 
-    web_context = state[web_context_key]
-    rag_context = state[rag_context_key]
-
-    system_prompt = PromptManager(PromptType.SUPPLY_DEMAND_SYSTEM).get_prompt(
-        date=get_today_str()
-    )
+    system_prompt = PromptManager(PromptType.SUPPLY_DEMAND_SYSTEM).get_prompt()
     humun_prompt = PromptManager(PromptType.SUPPLY_DEMAND_HUMAN).get_prompt(
         target_area=target_area,
-        web_context=web_context,
-        rag_context=rag_context,
+        date=get_today_str(),
+        year10_after_house = year10_after_house,
+        jeonse_price = jeonse_price,
+        sale_price = sale_price,
+        trade_balance = trade_balance,
+        use_kor_rate = use_kor_rate,
+        home_mortgage = home_mortgage,
+        one_people_gdp = one_people_gdp,
+        one_people_grdp = one_people_grdp,
+        housing_sales_volume = housing_sales_volume,
+        planning_move = planning_move,
+        
     )
 
     messages = [

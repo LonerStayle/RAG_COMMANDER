@@ -40,15 +40,15 @@ class PromptType(Enum):
     )
     
     #---2. 경제/정책 분석---
-    ECONOMIC_INSIGHT_SYSTEM = (
-        "ECONOMIC_INSIGHT_SYSTEM",
-        str(Path(get_project_root()) / "src" / "prompts" / "analysis_economic_insight.yaml"),
+    POLICY_SYSTEM = (
+        "POLICY_SYSTEM",
+        str(Path(get_project_root()) / "src" / "prompts" / "analysis_policy.yaml"),
         "경제/정책 분석 에이전트의 시스템 메시지",
     )
     
-    ECONOMIC_INSIGHT_HUMAN = (
-        "ECONOMIC_INSIGHT_HUMAN",
-        str(Path(get_project_root()) / "src" / "prompts" / "analysis_economic_insight.yaml"),
+    POLICY_HUMAN = (
+        "POLICY_HUMAN",
+        str(Path(get_project_root()) / "src" / "prompts" / "analysis_policy.yaml"),
         "경제/정책 분석 에이전트의 실행 메시지",
     )
     

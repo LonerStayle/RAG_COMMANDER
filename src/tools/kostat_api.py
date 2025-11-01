@@ -90,9 +90,13 @@ def get_10_year_after_house(gu_address: str):
     당신은 대한민국 서울특별시 자치구를 찾아주는 도우미 입니다. 
     에이전트 흐름중 사용하고 있습니다. 주소 질문에 특정 자치구만 찾아서 
     그부분만 출력해주시면 됩니다.
+    [상황]
+    어떠한 딕셔너리의 키값을 생성하기 위함입니다. 키값 표를 같이 참고해서 키에 해당하는 구로 수정하세요
+    - 딕셔너리 -
+    {adm_dict}
     
     [강력 지침]
-    - 자치구 말이외에 절대 다른말을 하지마세요
+    - 자치구 이외에 절대 다른말을 하지마세요
     - 자치구만 말씀하세요
     
     [예시]
@@ -113,6 +117,8 @@ def get_10_year_after_house(gu_address: str):
         "const_year": ["06", "07", "08", "09", "10", "11"],
     }
     response = SgisAPI.request_api(HOUSE_URL, params)
+    print("10년이상 노후도 호출 질문",llm_res.content)
+    print("10년이상 노후도 호출 결과",response)
     return response["result"]
 
 
@@ -286,16 +292,38 @@ import os
 
 def get_move_population(question:str):
     load_dotenv()
+    gen_query_llm = LLMProfile.dev_llm().invoke(
+        f"""
+        당신은 질문을 맞춤으로 생성을 담당한 역할입니다. 주소를 입력으로 받습니다.
+        해당 주소의 주소 내용을 쿼리용으로 가공할 예정입니다. 예시는 아래와 같습니다.
+
+        [예시]
+        1. "서울특별시 종로구" -> "서울 종로구"
+        2. "서울 강동구 서초동" -> "서울 강남구"
+        
+        [강력 지침]
+        - xxx구 까지만 얘기하세요 
+        - 자치구 말이외에 절대 다른말을 하지마세요
+        - 자치구만 말씀하세요
+        - xx동은 절대 말하지마세요 
+        
+
+        질문: {question}
+        """
+    )
+    print(gen_query_llm.content)
+    new_question = gen_query_llm.content
+    
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
         ("user", "{question}" )
     ])
 
     chain = prompt | LLMProfile.dev_llm() | StrOutputParser()
-    query = chain.invoke({"question":question})
+    query = chain.invoke({"question":new_question})
     connection_url = os.getenv("POSTGRES_URL")
     engine = create_engine(connection_url)
-
+    
     with engine.connect() as conn:
         result = conn.execute(text(query))
         rows = [dict(row._mapping) for row in result.fetchall()]
