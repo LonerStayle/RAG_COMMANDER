@@ -129,7 +129,7 @@ def trade_balance(state: SupplyDemandState) -> SupplyDemandState:
     target_area = start_input[target_area_key]
     seoul_balance = get_trade_balance("서울")
 
-    llm_result = LLMProfile.dev_llm().invoke(
+    llm_result = LLMProfile.chat_bot_llm().invoke(
         f"""
         {seoul_balance}\n\n
         
