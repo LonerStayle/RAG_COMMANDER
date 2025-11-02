@@ -50,7 +50,7 @@ messages_key = JungMinJaeState.KEY.messages
 review_feedback_key = JungMinJaeState.KEY.review_feedback
 
 location_insight_output_key = "location_insight"
-policy_output_key = "economic_insight"
+policy_output_key = "policy_output"
 housing_faq_output_key = "housing_faq"
 nearby_market_output_key = "nearby_market"
 population_insight_output_key = "population_insight"
