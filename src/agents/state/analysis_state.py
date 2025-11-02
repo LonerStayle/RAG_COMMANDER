@@ -29,7 +29,8 @@ class PolicyState(TypedDict):
 class HousingFaqState(TypedDict):
     start_input: dict
     housing_faq_output: str
-    rag_context:Optional[str]
+    housing_faq_context:Optional[str]
+    housing_rule_context:Optional[str]
     messages : Annotated[list[AnyMessage], add_messages]
 
 @attach_auto_keys    
@@ -74,8 +75,7 @@ class SupplyDemandState(TypedDict):
 class UnsoldInsightState(TypedDict):
     start_input: dict
     unsold_insight_output: str
-    rag_context: Optional[str]
-    web_context: Optional[str]
+    unsold_unit: Optional[str]
     messages: Annotated[list[AnyMessage], add_messages]
 
 

@@ -75,28 +75,28 @@ def web_search(state: NearbyMarketState) -> NearbyMarketState:
     target_area = start_input[target_area_key]
     queries=[
         # 1) 1km 매매 실거래(유사 연식/평형; 3.3㎡ 환산 근거 포함)
-        f"{target_area} 아파트 실거래가 단지별 전용 59 74 84 최근 6~12개월 거래월 층 가격 3.3㎡ 환산 근거 site:rt.molit.go.kr",
+        # f"{target_area} 아파트 실거래가 단지별 전용 59 74 84 최근 6~12개월 거래월 층 가격 3.3㎡ 환산 근거 site:rt.molit.go.kr",
 
-        # 2) (보조) 지자체 제공 실거래 뷰어(출처가 '국토부 실거래가'임을 명시)
-        f"{target_area} 아파트 실거래 신고가격 단지별 전용면적 최근 거래월 site:land.seoul.go.kr 국토교통부 실거래가",
+        # # 2) (보조) 지자체 제공 실거래 뷰어(출처가 '국토부 실거래가'임을 명시)
+        # f"{target_area} 아파트 실거래 신고가격 단지별 전용면적 최근 거래월 site:land.seoul.go.kr 국토교통부 실거래가",
 
-        # 3) 지역 시세/중위 참고(보조): REB 주간·월간 동향
-        f"{target_area} 한국부동산원 아파트 매매 전세 가격 동향 중위 가격 지수 최근 월 site:reb.or.kr",
+        # # 3) 지역 시세/중위 참고(보조): REB 주간·월간 동향
+        # f"{target_area} 한국부동산원 아파트 매매 전세 가격 동향 중위 가격 지수 최근 월 site:reb.or.kr",
 
-        # 4) 2km 최근 2년 분양 단지: 분양가(3.3㎡), 평형, 브랜드, 세대수
-        f"{target_area} 최근 2년 분양 단지 분양가 3.3㎡ 전용 59 74 84 브랜드 세대수 site:applyhome.co.kr",
+        # # 4) 2km 최근 2년 분양 단지: 분양가(3.3㎡), 평형, 브랜드, 세대수
+        # f"{target_area} 최근 2년 분양 단지 분양가 3.3㎡ 전용 59 74 84 브랜드 세대수 site:applyhome.co.kr",
 
-        # 5) 2km 최근 2년 청약 지표: 경쟁률, 1순위 마감 여부, 산식 팝업(공식)
-        f"{target_area} 청약 경쟁률 1순위 마감 팝업 산식 최근 2년 site:applyhome.co.kr",
+        # # 5) 2km 최근 2년 청약 지표: 경쟁률, 1순위 마감 여부, 산식 팝업(공식)
+        # f"{target_area} 청약 경쟁률 1순위 마감 팝업 산식 최근 2년 site:applyhome.co.kr",
 
-        # 6) 2km 최근 2년 계약조건: 중도금 무이자/계약금 비율·특약
-        f"{target_area} 분양 공고 계약조건 중도금 무이자 계약금 비율 특약 최근 2년 site:applyhome.co.kr",
+        # # 6) 2km 최근 2년 계약조건: 중도금 무이자/계약금 비율·특약
+        # f"{target_area} 분양 공고 계약조건 중도금 무이자 계약금 비율 특약 최근 2년 site:applyhome.co.kr",
 
-        # 7) 원문 PDF(있으면 가점): 분양공고/분양가 책정 근거
-        f"{target_area} filetype:pdf 분양 공고 분양가 3.3㎡ 계약조건 경쟁률 site:applyhome.co.kr OR site:molit.go.kr",
+        # # 7) 원문 PDF(있으면 가점): 분양공고/분양가 책정 근거
+        # f"{target_area} filetype:pdf 분양 공고 분양가 3.3㎡ 계약조건 경쟁률 site:applyhome.co.kr OR site:molit.go.kr",
 
-        # 8) 도메인-무관 보완(정확한 역/단지 식별용 키워드)
-        f"{target_area} 역세권 단지명 전용 84㎡ 최근 실거래 분양가 비교 3.3㎡"
+        # # 8) 도메인-무관 보완(정확한 역/단지 식별용 키워드)
+        # f"{target_area} 역세권 단지명 전용 84㎡ 최근 실거래 분양가 비교 3.3㎡"
     ]
     
     search_list = []
@@ -105,6 +105,7 @@ def web_search(state: NearbyMarketState) -> NearbyMarketState:
         res = search_client.search.create(query=batch)
         search_list.append(res)
         return {**state, web_context_key: search_list}
+    return {web_context_key : ""}
 
 def analysis_setting(state: NearbyMarketState) -> NearbyMarketState:    
     start_input = state[start_input_key]
