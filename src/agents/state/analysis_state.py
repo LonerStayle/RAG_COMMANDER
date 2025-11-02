@@ -12,7 +12,6 @@ class LocationInsightState(TypedDict):
     rag_context: Optional[str]
     web_context: Optional[str]
     messages: Annotated[list[AnyMessage], add_messages]
-    kakao_api_distance_context: Optional[str]
     my_tool: str
 
 
@@ -30,10 +29,12 @@ class PolicyState(TypedDict):
 class HousingFaqState(TypedDict):
     start_input: dict
     housing_faq_output: str
-    rag_context:Optional[str]
-    messages : Annotated[list[AnyMessage], add_messages]
+    housing_faq_context: Optional[str]
+    housing_rule_context: Optional[str]
+    messages: Annotated[list[AnyMessage], add_messages]
 
-@attach_auto_keys    
+
+@attach_auto_keys
 class NearbyMarketState(TypedDict):
     start_input: dict
     nearby_market_output: str
@@ -55,7 +56,7 @@ class PopulationInsightState(TypedDict):
 class SupplyDemandState(TypedDict):
     start_input: dict
     supply_demand_output: str
-    
+
     year10_after_house: Optional[str]
     jeonse_price: Optional[str]
     sale_price: Optional[str]
@@ -63,11 +64,11 @@ class SupplyDemandState(TypedDict):
     use_kor_rate: Optional[str]
     home_mortgage: Optional[str]
     one_people_gdp: Optional[str]
-    one_people_grdp:Optional[str]
+    one_people_grdp: Optional[str]
     housing_sales_volume: Optional[str]
     planning_move: Optional[str]
     pre_pomise_competition: Optional[str]
-    
+
     messages: Annotated[list[AnyMessage], add_messages]
 
 
@@ -75,8 +76,7 @@ class SupplyDemandState(TypedDict):
 class UnsoldInsightState(TypedDict):
     start_input: dict
     unsold_insight_output: str
-    rag_context: Optional[str]
-    web_context: Optional[str]
+    unsold_unit: Optional[str]
     messages: Annotated[list[AnyMessage], add_messages]
 
 

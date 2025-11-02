@@ -5,7 +5,8 @@ from langchain_core.messages import AnyMessage
 
 @attach_auto_keys
 class MainState(TypedDict, total=False):
-    
+    # key들들
+    # messages  : AI랑 채팅 내역역
     messages : Annotated[list[AnyMessage], add_messages]
     
     # 사용자 입력 정보

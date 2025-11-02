@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from langgraph.graph.state import Command, Literal
@@ -12,6 +13,7 @@ from prompts import PromptManager, PromptType
 from agents.analysis.analysis_graph import analysis_graph
 from agents.jung_min_jae.jung_min_jae_agent import report_graph
 from copy import deepcopy
+from tools.send_gmail import gmail_authenticate, send_markdown_as_html
 
 start_llm = LLMProfile.chat_bot_llm()
 messages_key = MainState.KEY.messages
@@ -23,7 +25,7 @@ status_key = MainState.KEY.status
 def start_confirmation(
     state: MainState,
 ) -> Command[Literal["start", "__end__"]]:
-
+    gmail_authenticate()
     parser_llm = start_llm.with_structured_output(StartConfirmation)
 
     messages_str = get_buffer_string(messages=state[messages_key])
@@ -32,7 +34,6 @@ def start_confirmation(
         messages=messages_str
     )
     response: StartConfirmation = parser_llm.invoke([HumanMessage(content=prompt)])
-    
 
     if response.confirm == False:
         return Command(
@@ -55,23 +56,38 @@ def start(state: MainState) -> MainState:
 
 
 async def analysis_graph_node(state: MainState) -> MainState:
-    
-    result = await analysis_graph.ainvoke({"start_input": deepcopy(state[start_input_key])})
+
+    result = await analysis_graph.ainvoke(
+        {"start_input": deepcopy(state[start_input_key])}
+    )
     return {
         "analysis_outputs": result.get("analysis_outputs", {}),
-        status_key: "JUNG_MIN_JAE"
+        status_key: "JUNG_MIN_JAE",
     }
 
 
 def jung_min_jae_graph(state: MainState) -> MainState:
-    result = report_graph.invoke({"start_input": deepcopy(state[start_input_key]),
-                                  "analysis_outputs": deepcopy(state[analysis_outputs_key]),
-                                  "segment":1
-                                  })
-    return {
-        "final_report": result["final_report"],
-        status_key:"RENDERING"
-    }
+    start_input = state[start_input_key]
+    result = report_graph.invoke(
+        {
+            "start_input": deepcopy(start_input),
+            "analysis_outputs": deepcopy(state[analysis_outputs_key]),
+            "segment": 1,
+        }
+    )
+
+    # 11월 3일 시연용
+    target_area_key = StartInput.KEY.target_area
+    main_type_key = StartInput.KEY.main_type
+    target_area = start_input[target_area_key]
+    main_type = start_input[main_type_key]
+    gmail_title = f"사업지: {target_area}, 규모 및 세대수:{main_type}"
+    send_markdown_as_html(
+        md_content=result["final_report"],
+        to="immortal0900@gmail.com",
+        title=gmail_title,
+    )
+    return {"final_report": result["final_report"], status_key: "RENDERING"}
 
 
 graph_builder = StateGraph(MainState)

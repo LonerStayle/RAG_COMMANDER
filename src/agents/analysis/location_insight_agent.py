@@ -11,7 +11,6 @@ from langgraph.prebuilt import ToolNode
 from tools.kostat_api import get_move_population
 
 
-
 @tool(parse_docstring=True)
 def think_tool(reflection: str) -> str:
     """입지분석(Location Insight) 진행 중 **전략적 성찰(Reflection)**을 기록/보정하는 도구입니다.
@@ -63,8 +62,7 @@ start_input_key = LocationInsightState.KEY.start_input
 rag_context_key = LocationInsightState.KEY.rag_context
 messages_key = LocationInsightState.KEY.messages
 target_area_key = StartInput.KEY.target_area
-scale_key = StartInput.KEY.scale
-total_units_key = StartInput.KEY.total_units
+main_type_key = StartInput.KEY.main_type
 web_context_key = LocationInsightState.KEY.web_context
 
 
@@ -74,29 +72,27 @@ llm_with_tools = llm.bind_tools(tool_list)
 tool_node = ToolNode(tool_list)
 
 from perplexity import Perplexity
+
 search_client = Perplexity()
+
 
 def web_search(state: LocationInsightState) -> LocationInsightState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
-    total_units = start_input[total_units_key]
-    queries=[
-            
-    ]
-    
+    main_type = start_input[main_type_key]
+    queries = []
+
     search_list = []
-    for i in range(0, len(queries), 5): # 질문을 5개씩 끊어서 
-        batch = queries[i:i+5]
+    for i in range(0, len(queries), 5):  # 질문을 5개씩 끊어서
+        batch = queries[i : i + 5]
         res = search_client.search.create(query=batch)
         search_list.append(res)
         return {**state, web_context_key: search_list}
-    return {web_context_key:""}
+    return {web_context_key: ""}
 
 
 from langchain_openai import OpenAIEmbeddings
 import json
-
-
 
 
 def retreive(state: LocationInsightState) -> LocationInsightState:
@@ -119,16 +115,14 @@ def retreive(state: LocationInsightState) -> LocationInsightState:
 def analysis_setting(state: LocationInsightState) -> LocationInsightState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
-    scale = start_input[scale_key]
-    total_units = start_input[total_units_key]
+    main_type = start_input[main_type_key]
     rag_context = state[rag_context_key]
     web_context = state[web_context_key]
 
     system_prompt = PromptManager(PromptType.LOCATION_INSIGHT_SYSTEM).get_prompt()
     humun_prompt = PromptManager(PromptType.LOCATION_INSIGHT_HUMAN).get_prompt(
         target_area=target_area,
-        scale=scale,
-        total_units=total_units,
+        main_type=main_type,
         date=get_today_str(),
         web_context=web_context,
         rag_context=rag_context,

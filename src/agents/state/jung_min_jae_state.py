@@ -8,6 +8,7 @@ class JungMinJaeState(TypedDict):
     analysis_outputs:dict
     start_input: dict
     rag_context:Optional[str]
+    final_draft: Optional[str]
     final_report: Optional[str]
     
     # think_tool 결과 
