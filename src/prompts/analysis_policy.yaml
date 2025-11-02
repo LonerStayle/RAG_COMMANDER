@@ -38,8 +38,16 @@ POLICY_HUMAN:
     [지역 관련 부동산 정책 뉴스모음]
     {region_news_context}
 
+
   input_variables:
     - target_area
     - date
     - national_news_context
     - region_news_context
+
+
+# [작업 지시]
+# 위의 정책 데이터를 분석한 뒤, **think_tool** 도구를 반드시 1회 호출하여 reflection을 기록하십시오.
+
+# [지침]
+# - 자연어 답변은 하지 말고 think_tool 호출 1회를 수행하세요.
