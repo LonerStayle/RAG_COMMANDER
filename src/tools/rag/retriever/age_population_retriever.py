@@ -4,7 +4,7 @@ from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
 import os
 from utils.llm import LLMProfile
-
+from tools.rag.vector_store import get_pgvector_store
 
 # 2025년 4 ~ 9월 -> 인구 연령별 분포
 def age_population_retrieve(question):
@@ -28,12 +28,7 @@ def age_population_retrieve(question):
         """
     )
     query = llm.content
-    emb = OpenAIEmbeddings(model="text-embedding-3-large")
-    store = PGVector(
-        collection_name=AGE_POPULATION_KEY,
-        embedding_function=emb,
-        connection_string=POSTGRES_URL,
-    )
+    store = get_pgvector_store(AGE_POPULATION_KEY)
     retriever = store.as_retriever(search_type="similarity", search_kwargs={"k": 1})
     search_result = retriever.invoke(query)
 

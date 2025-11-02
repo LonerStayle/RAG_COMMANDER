@@ -43,13 +43,13 @@ class PromptType(Enum):
     POLICY_SYSTEM = (
         "POLICY_SYSTEM",
         str(Path(get_project_root()) / "src" / "prompts" / "analysis_policy.yaml"),
-        "경제/정책 분석 에이전트의 시스템 메시지",
+        "정책 분석 에이전트의 시스템 메시지",
     )
     
     POLICY_HUMAN = (
         "POLICY_HUMAN",
         str(Path(get_project_root()) / "src" / "prompts" / "analysis_policy.yaml"),
-        "경제/정책 분석 에이전트의 실행 메시지",
+        "정책 분석 에이전트의 실행 메시지",
     )
     
     #---3. 수급 분석 분석---
@@ -97,6 +97,18 @@ class PromptType(Enum):
         "POPULATION_INSIGHT_SYSTEM",
         str(Path(get_project_root()) / "src" / "prompts" / "analysis_population_insight.yaml"),
         "유동 인구 분석 에이전트의 시스템 메시지",
+    )
+    
+    #---7. 청약 정보 조회 ---
+    HOUSING_FAQ_SYSTEM = (
+        "HOUSING_FAQ_SYSTEM",
+        str(Path(get_project_root()) / "src" / "prompts" / "analysis_housing_faq.yaml"),
+        "청약 정보 조회 에이전트의 시스템 메시지",
+    )
+    HOUSING_FAQ_HUMAN = (
+        "HOUSING_FAQ_HUMAN",
+        str(Path(get_project_root()) / "src" / "prompts" / "analysis_housing_faq.yaml"),
+        "청약 정보 조회 에이전트의 질문 메시지",
     )
     
     POPULATION_INSIGHT_HUMAN = (
