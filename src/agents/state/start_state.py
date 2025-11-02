@@ -36,11 +36,11 @@ class StartInput(BaseModel):
         description="전체 세대수입니다. 예시: 1050"
     )
 
-    units_by_type: Optional[str] = Field(
-        description="타입별 세대수입니다. 예시: {'59㎡': 300, '84㎡': 700}"
+    main_type: Optional[str] = Field(
+        description="단지의 대표 타입 혹은 타입별 세대수입니다. 예시: 84제곱미터 or 84m² or {'59㎡': 300, '84㎡': 700}"
     )
 
-    brand: Optional[str] = Field(description="대표 평형 / 브랜드 / 시공사 입니다.")
+    brand: Optional[str] = Field(description="브랜드 / 시공사 입니다.")
 
     orientation: Optional[str] = Field(description="향 / 배치 형태 입니다.")
 
