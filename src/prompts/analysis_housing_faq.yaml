@@ -31,9 +31,7 @@ HOUSING_FAQ_HUMAN:
   prompt: |
     [고객의 요구]
     대상지 : {target_area}
-    규모 : {scale}
-    세대수 : {total_units}
-
+    단지의 대표 타입 혹은 타입별 세대수 : {main_type}
 
     [고객의 요구와 관련된 주택 청약 FAQ 내용]
     {hosuing_faq_context}
@@ -43,7 +41,6 @@ HOUSING_FAQ_HUMAN:
 
   input_variables:
     - target_area
-    - scale    
-    - total_units
+    - main_type    
     - hosuing_faq_context
     - hosuing_rule_context

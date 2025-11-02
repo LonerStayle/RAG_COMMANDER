@@ -81,8 +81,7 @@ JUNG_MIN_JAE_HUMAN:
   prompt: |
     [고객의 요구]
     - 대상지: {target_area}
-    - 규모: {scale}
-    - 세대수: {total_units}
+    - 단지의 대표 타입 혹은 타입별 세대수: {main_type}
 
     <1. 주택 청약 FAQ 보고서 내용>
     {housing_faq}
@@ -115,8 +114,7 @@ JUNG_MIN_JAE_HUMAN:
 
   input_variables:
     - target_area
-    - scale
-    - total_units
+    - main_type
     - housing_faq
     - location_insight
     - policy

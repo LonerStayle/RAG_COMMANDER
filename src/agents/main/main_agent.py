@@ -73,12 +73,10 @@ def jung_min_jae_graph(state: MainState) -> MainState:
     
     # 11월 3일 시연용 
     target_area_key = StartInput.KEY.target_area
-    scale_key = StartInput.KEY.scale
-    total_units_key = StartInput.KEY.total_units
+    main_type_key = StartInput.KEY.main_type
     target_area = start_input[target_area_key]
-    scale = start_input[scale_key]
-    total_units = start_input[total_units_key]
-    gmail_title = f"사업지: {target_area}, 규모:{scale}, 세대수:{total_units}"
+    main_type = start_input[main_type_key]
+    gmail_title = f"사업지: {target_area}, 규모 및 세대수:{main_type}"
     send_markdown_as_html(md_content = result["final_report"], to = "immortal0900@gmail.com", title =gmail_title)
     return {
         "final_report": result["final_report"],

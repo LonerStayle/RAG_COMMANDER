@@ -58,8 +58,7 @@ supply_demand_output_key = "supply_demand"
 unsold_insight_output_key = "unsold_insight"
 
 target_area_key = StartInput.KEY.target_area
-scale_key = StartInput.KEY.scale
-total_units_key = StartInput.KEY.total_units
+main_type_key = StartInput.KEY.main_type
 
 llm = LLMProfile.report_llm()
 reflect_llm = LLMProfile.dev_llm().bind_tools([think_tool])
@@ -89,50 +88,6 @@ def retreiver(state: JungMinJaeState) -> JungMinJaeState:
     _ = state[start_input_key]
     return {rag_context_key: "rag_test"}
 
-
-# def reporting(state: JungMinJaeState) -> JungMinJaeState:
-#     seg = state.get(segment_key, 1)
-#     analysis_outputs = state[analysis_outputs_key]
-#     start_input = state[start_input_key]
-
-#     target_area = start_input[target_area_key]
-#     scale = start_input[scale_key]
-#     total_units = start_input[total_units_key]
-
-#     location_insight = analysis_outputs[location_insight_output_key]
-#     policy = analysis_outputs[policy_output_key]
-#     housing_faq = analysis_outputs[housing_faq_output_key]
-#     nearby_market = analysis_outputs[nearby_market_output_key]
-#     population_insight = analysis_outputs[population_insight_output_key]
-#     supply_demand = analysis_outputs[supply_demand_output_key]
-#     unsold_insight = analysis_outputs[unsold_insight_output_key]
-
-#     directive = segment_directive(seg)
-#     prev_context = prev_segment_context(state) or ""
-
-#     system_prompt = PromptManager(PromptType.JUNG_MIN_JAE_SYSTEM).get_prompt(
-#         date=get_today_str()
-#     )
-
-#     human_prompt = PromptManager(PromptType.JUNG_MIN_JAE_HUMAN).get_prompt(
-#         target_area=target_area,
-#         scale=scale,
-#         total_units=total_units,
-#         housing_faq=housing_faq,
-#         location_insight=location_insight,
-#         policy=policy,
-#         supply_demand=supply_demand,
-#         unsold_insight=unsold_insight,
-#         population_insight=population_insight,
-#         nearby_market=nearby_market,
-#     )
-
-#     messages = [
-#         SystemMessage(content=system_prompt),
-#         HumanMessage(content=f"{directive}\n\n{prev_context}\n\n{human_prompt}"),
-#     ]
-#     return {messages_key: messages}
-
 def reporting(state: JungMinJaeState) -> JungMinJaeState:
     seg = state.get(segment_key, 1)
 
@@ -140,8 +95,7 @@ def reporting(state: JungMinJaeState) -> JungMinJaeState:
     analysis_outputs = state.get(analysis_outputs_key, {}) or {}
 
     target_area = start_input.get(target_area_key, "")
-    scale = start_input.get(scale_key, "")
-    total_units = start_input.get(total_units_key, "")
+    main_type = start_input.get(main_type_key, "")
 
     location_insight = analysis_outputs.get(location_insight_output_key, "")
     policy = analysis_outputs.get(policy_output_key, "")
@@ -160,8 +114,7 @@ def reporting(state: JungMinJaeState) -> JungMinJaeState:
 
     human_prompt = PromptManager(PromptType.JUNG_MIN_JAE_HUMAN).get_prompt(
         target_area=target_area,
-        scale=scale,
-        total_units=total_units,
+        main_type=main_type,
         housing_faq=housing_faq,
         location_insight=location_insight,
         policy=policy,

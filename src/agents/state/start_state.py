@@ -28,14 +28,6 @@ class StartInput(BaseModel):
         description="조사하려는 주소입니다. 예시: 인천광역시 부평구 부개동 13-5번지 일원",
     )
 
-    scale: str = Field(
-        description="단지의 규모를 나타냅니다. 예시: 대단지, 중규모, 소규모, 주력 타입 84㎡ 등"
-    )
-
-    total_units: Optional[int] = Field(
-        description="전체 세대수입니다. 예시: 1050"
-    )
-
     main_type: Optional[str] = Field(
         description="단지의 대표 타입 혹은 타입별 세대수입니다. 예시: 84제곱미터 or 84m² or {'59㎡': 300, '84㎡': 700}"
     )

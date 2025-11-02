@@ -37,9 +37,8 @@ LOCATION_INSIGHT_HUMAN:
     [목표]
     아래 내용들을 분석합니다. 
     타겟 지역: {target_area}
-    타겟 규모: {scale}
-    티겟 세대수: {total_units}
-    목표일 기준: {date}.
+    타겟 규모: {main_type}
+    목표일 기준: {date}
 
     [아래 데이터를 파악하세요]
     - 초등학교명 + 실보행 **분/미터** + 통학로 메모(대로 횡단/보행로 유무 등)
@@ -52,8 +51,7 @@ LOCATION_INSIGHT_HUMAN:
 
   input_variables:
     - target_area
-    - scale
-    - total_units
+    - main_type
     - date
     - web_context
     - rag_context

@@ -63,8 +63,7 @@ start_input_key = LocationInsightState.KEY.start_input
 rag_context_key = LocationInsightState.KEY.rag_context
 messages_key = LocationInsightState.KEY.messages
 target_area_key = StartInput.KEY.target_area
-scale_key = StartInput.KEY.scale
-total_units_key = StartInput.KEY.total_units
+main_type_key = StartInput.KEY.main_type
 web_context_key = LocationInsightState.KEY.web_context
 
 
@@ -79,7 +78,7 @@ search_client = Perplexity()
 def web_search(state: LocationInsightState) -> LocationInsightState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
-    total_units = start_input[total_units_key]
+    main_type = start_input[main_type_key]
     queries=[
             
     ]
@@ -117,16 +116,14 @@ def retreive(state: LocationInsightState) -> LocationInsightState:
 def analysis_setting(state: LocationInsightState) -> LocationInsightState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
-    scale = start_input[scale_key]
-    total_units = start_input[total_units_key]
+    main_type = start_input[main_type_key]
     rag_context = state[rag_context_key]
     web_context = state[web_context_key]
 
     system_prompt = PromptManager(PromptType.LOCATION_INSIGHT_SYSTEM).get_prompt()
     humun_prompt = PromptManager(PromptType.LOCATION_INSIGHT_HUMAN).get_prompt(
         target_area=target_area,
-        scale=scale,
-        total_units=total_units,
+        main_type=main_type,
         date=get_today_str(),
         web_context=web_context,
         rag_context=rag_context,

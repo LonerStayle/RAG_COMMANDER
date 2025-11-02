@@ -18,7 +18,7 @@ def housing_faq_retrieve():
         collection_name=HOUSING_FAQ_KEY,
         use_jsonb=True,
     )
-    retriever = store.as_retriever(kwargs={"k": 10})
+    retriever = store.as_retriever(search_kwargs={"k": 20})
     return retriever
 
 
@@ -33,5 +33,5 @@ def housing_rule_retrieve():
         collection_name=HOUSING_RULE_KEY,
         use_jsonb=True,
     )
-    retriever = store.as_retriever(search_kwargs={"k": 10})
+    retriever = store.as_retriever(search_kwargs={"k": 20})
     return retriever
