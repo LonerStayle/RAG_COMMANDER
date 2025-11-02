@@ -97,6 +97,8 @@ from langchain_openai import OpenAIEmbeddings
 import json
 
 
+
+
 def retreive(state: LocationInsightState) -> LocationInsightState:
     # embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 

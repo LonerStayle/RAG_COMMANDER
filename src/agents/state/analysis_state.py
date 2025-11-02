@@ -12,6 +12,7 @@ class LocationInsightState(TypedDict):
     rag_context: Optional[str]
     web_context: Optional[str]
     messages: Annotated[list[AnyMessage], add_messages]
+    kakao_api_distance_context: Optional[str]
     my_tool: str
 
 
