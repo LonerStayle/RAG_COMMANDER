@@ -3,7 +3,7 @@ from utils.util import get_project_root
 
 def national_policy_retrieve():
     path = get_project_root() / "src"/ "data"/ "policy_factors" / "국토교통부_부동산정책(2024~2025) - 최종.csv"
-    loader = load_csv_loader(path)
+    loader = load_csv_loader(path, encoding='utf-8', autodetect_encoding=True)
     docs = loader.load()
     result = []
     for doc in docs:

@@ -34,7 +34,11 @@ def age_population_retrieve(question):
         embedding_function=emb,
         connection_string=POSTGRES_URL,
     )
-    retriever = store.as_retriever(seach_type={"k": 1})
+    retriever = store.as_retriever(search_type="similarity", search_kwargs={"k": 1})
     search_result = retriever.invoke(query)
+
+    if not search_result:
+        return f"'{query}' 지역의 연령별 인구 데이터를 찾을 수 없습니다."
+
     search_doc = search_result[0].page_content[4:]
     return search_doc

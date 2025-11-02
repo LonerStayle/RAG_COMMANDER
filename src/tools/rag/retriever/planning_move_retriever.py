@@ -4,7 +4,7 @@ from utils.llm import LLMProfile
 
 def planning_move_retrieve(query):
     path = get_project_root() /"src"/"data"/"supply_demand"/"250829_입주예정물량 공개용.csv"
-    docs = load_csv_loader(path).load()
+    docs = load_csv_loader(path, encoding='utf-8', autodetect_encoding=True).load()
     
     llm = LLMProfile.dev_llm().invoke(
     f"""

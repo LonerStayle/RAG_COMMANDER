@@ -16,5 +16,5 @@ def retriever_housing_faq():
         collection_name=collection_name,
         use_jsonb=True,
     )
-    retriever = store.as_retriever(kwargs = {"k":5})
+    retriever = store.as_retriever(search_kwargs={"k": 5})
     return retriever

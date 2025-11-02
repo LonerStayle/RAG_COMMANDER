@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from langgraph.graph.state import Command, Literal
 from agents.state.start_state import StartConfirmation, StartInput
 from agents.state.main_state import MainState

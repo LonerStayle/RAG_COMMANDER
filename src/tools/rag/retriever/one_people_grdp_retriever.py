@@ -31,7 +31,7 @@ def one_people_grdp_retrieve(address: str):
         / "서울_자치구별_1인당_GRDP.csv"
     )
 
-    loader = load_csv_loader(path)
+    loader = load_csv_loader(path, encoding='utf-8', autodetect_encoding=True)
     docs = loader.load()
     seoul_docs = []
 

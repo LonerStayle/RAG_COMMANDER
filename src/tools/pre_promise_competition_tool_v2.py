@@ -1,9 +1,14 @@
 from tools.mcp_client.mcp_client import get_tools
 from utils.llm import LLMProfile
 from langchain_core.messages import ToolMessage
+import sys
 
 
 async def pre_promise(query):
+    # Jupyter 환경에서는 MCP가 작동하지 않음
+    if 'ipykernel' in sys.modules:
+        return "청약 경쟁률 데이터는 Jupyter 노트북 환경에서 사용할 수 없습니다. Python 스크립트(.py)로 실행해주세요."
+
     tools = await get_tools()
     llm = LLMProfile.dev_llm().bind_tools(tools)
 
