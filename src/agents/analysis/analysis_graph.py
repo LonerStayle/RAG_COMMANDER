@@ -42,7 +42,7 @@ graph_builder.add_node(unsold_insight_key, unsold_insight_graph, transform=make_
 
 def join_results(state: AnalysisGraphState) -> AnalysisGraphState:
     analysis_outputs = {
-        policy_key: state.get(f"{policy_key}_output"),
+        "policy_output": state.get(f"{policy_key}_output"),
         housing_faq_key: state.get(f"{housing_faq_key}_output"),
         location_insight_key: state.get(f"{location_insight_key}_output"),
         nearby_market_key: state.get(f"{nearby_market_key}_output"),

@@ -51,8 +51,9 @@ def start(state: MainState) -> MainState:
     return {start_input_key: response.model_dump(), status_key: "ANALYSIS"}
 
 
-def analysis_graph_node(state: MainState) -> MainState:
-    result = analysis_graph.invoke({"start_input": deepcopy(state[start_input_key])})
+async def analysis_graph_node(state: MainState) -> MainState:
+    
+    result = await analysis_graph.ainvoke({"start_input": deepcopy(state[start_input_key])})
     return {
         "analysis_outputs": result.get("analysis_outputs", {}),
         status_key: "JUNG_MIN_JAE"
