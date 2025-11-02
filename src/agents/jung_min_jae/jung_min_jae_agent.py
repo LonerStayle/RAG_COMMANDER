@@ -5,6 +5,8 @@ from prompts import PromptManager, PromptType
 from utils.util import get_today_str
 from langchain_core.messages import SystemMessage, HumanMessage
 from agents.state.jung_min_jae_state import JungMinJaeState
+from agents.state.start_state import StartInput
+from agents.state.analysis_state import AnalysisGraphState
 
 
 @tool(parse_docstring=True)
@@ -47,6 +49,18 @@ segment_buffers_key = JungMinJaeState.KEY.segment_buffers
 messages_key = JungMinJaeState.KEY.messages
 review_feedback_key = JungMinJaeState.KEY.review_feedback
 
+location_insight_output_key = "location_insight"
+policy_output_key = "economic_insight"
+housing_faq_output_key = "housing_faq"
+nearby_market_output_key = "nearby_market"
+population_insight_output_key = "population_insight"
+supply_demand_output_key = "supply_demand"
+unsold_insight_output_key = "unsold_insight"
+
+target_area_key = StartInput.KEY.target_area
+scale_key = StartInput.KEY.scale
+total_units_key = StartInput.KEY.total_units
+
 llm = LLMProfile.report_llm()
 
 
@@ -57,20 +71,22 @@ def segment_directive(seg: int) -> str:
         return PromptManager(PromptType.JUNG_MIN_JAE_SEGMENT_02).get_prompt()
     return PromptManager(PromptType.JUNG_MIN_JAE_SEGMENT_03).get_prompt()
 
+
 dev_llm = LLMProfile.dev_llm()
+
+
 def prev_segment_context(state: JungMinJaeState) -> str:
     seg = state.get(segment_key, 1)
     if seg <= 1:
-        return 
-    
+        return
+
     summary_prompt = PromptManager(PromptType.JUNG_MIN_JAE_SUMMARY).get_prompt()
     buffers = state.get(segment_buffers_key, {})
     segments = list(buffers.values())
-    response = dev_llm.invoke([
-        SystemMessage(content=summary_prompt),
-        HumanMessage(content=str(segments))
-    ])
-    
+    response = dev_llm.invoke(
+        [SystemMessage(content=summary_prompt), HumanMessage(content=str(segments))]
+    )
+
     return f"# 이전 세그먼트 요약/맥락\n{response.content}"
 
 
@@ -78,14 +94,26 @@ def prev_segment_context(state: JungMinJaeState) -> str:
 def retreiver(state: JungMinJaeState) -> JungMinJaeState:
     start_input = state[start_input_key]
     # start_input 로 RAG 사용했다 치고..
-    return {rag_context_key: "rag_test" }
+    return {rag_context_key: "rag_test"}
 
 
 def reporting(state: JungMinJaeState) -> JungMinJaeState:
     seg = state.get(segment_key, 1)
     analysis_outputs = state[analysis_outputs_key]
     start_input = state[start_input_key]
-    rag_context = state.get(rag_context_key, "")
+
+    target_area = start_input[target_area_key]
+    scale = start_input[scale_key]
+    total_units = start_input[total_units_key]
+
+    location_insight = analysis_outputs[location_insight_output_key]
+    policy = analysis_outputs[policy_output_key]
+    housing_faq = analysis_outputs[housing_faq_output_key]
+    nearby_market = analysis_outputs[nearby_market_output_key]
+    population_insight = analysis_outputs[population_insight_output_key]
+    supply_demand = analysis_outputs[supply_demand_output_key]
+    unsold_insight = analysis_outputs[unsold_insight_output_key]
+
     directive = segment_directive(seg)
     prev_context = prev_segment_context(state)
 
@@ -94,10 +122,18 @@ def reporting(state: JungMinJaeState) -> JungMinJaeState:
     )
 
     human_prompt = PromptManager(PromptType.JUNG_MIN_JAE_HUMAN).get_prompt(
-        start_input=start_input,
-        analysis_outputs=analysis_outputs,
-        rag_context=rag_context,
+        target_area=target_area,
+        scale=scale,
+        total_units=total_units,
+        housing_faq=housing_faq,
+        location_insight=location_insight,
+        policy=policy,
+        supply_demand=supply_demand,
+        unsold_insight=unsold_insight,
+        population_insight=population_insight,
+        nearby_market=nearby_market,
     )
+
     messages = [
         SystemMessage(content=system_prompt),
         HumanMessage(content=f"{directive}\n\n{prev_context}\n\n{human_prompt}"),
@@ -120,20 +156,24 @@ def agent(state: JungMinJaeState) -> JungMinJaeState:
         new_state[segment_key] = seg + 1
     return new_state
 
+
 def review_with_think(state: JungMinJaeState) -> JungMinJaeState:
     final_text = state.get(final_report_key, "")
     feedback = think_tool.invoke({"reflection": final_text})
     improved = f"{final_text}\n\n---\n\n## 검토 노트(자동 성찰)\n{feedback}"
     return {review_feedback_key: feedback, final_report_key: improved}
 
+
 def finalize_merge(state: JungMinJaeState) -> JungMinJaeState:
     """세그먼트 병합 후, 목차/헤더/중복 간단 정리(필요 시)."""
     buffers = state.get(segment_buffers_key, {})
-    merged = "\n\n".join([
-        buffers.get("seg1", ""),
-        buffers.get("seg2", ""),
-        buffers.get("seg3", ""),
-    ])
+    merged = "\n\n".join(
+        [
+            buffers.get("seg1", ""),
+            buffers.get("seg2", ""),
+            buffers.get("seg3", ""),
+        ]
+    )
     # (선택) 간단한 후처리: 헤더 중복/수평선 정리 등
     merged = merged.replace("\n\n--\n\n", "\n\n---\n\n")  # 구분선 통일
     return {final_report_key: merged}
@@ -144,11 +184,11 @@ def router(state: JungMinJaeState):
 
     if seg <= 3:
         return "reporting"
-    
+
     # seg == 4 (3 초과)
     if not state.get(final_report_key):
         return "finalize_merge"
-    
+
     if not state.get(review_feedback_key):
         return "review_with_think"
 

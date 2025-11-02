@@ -90,6 +90,7 @@ def web_search(state: LocationInsightState) -> LocationInsightState:
         res = search_client.search.create(query=batch)
         search_list.append(res)
         return {**state, web_context_key: search_list}
+    return {web_context_key:""}
 
 
 from langchain_openai import OpenAIEmbeddings

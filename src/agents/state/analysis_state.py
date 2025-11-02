@@ -83,7 +83,7 @@ class UnsoldInsightState(TypedDict):
 class AnalysisGraphState(TypedDict, total=False):
     analysis_outputs: Annotated[Dict[str, str], operator.or_]
     location_insight_output: str
-    economic_insight_output: str
+    policy_output: str
     housing_faq_output: str
     nearby_market_output: str
     population_insight_output: str

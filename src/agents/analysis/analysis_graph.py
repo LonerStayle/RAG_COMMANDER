@@ -14,7 +14,7 @@ from agents.analysis.unsold_insight_agent import unsold_insight_graph
 
 from copy import deepcopy
 
-economic_insight_key = "economic_insight"
+policy_key = "policy"
 housing_faq_key = "housing_faq"
 location_insight_key = "location_insight"
 nearby_market_key = "nearby_market"
@@ -32,7 +32,7 @@ def make_transform(agent_name: str):
         },
     }
 graph_builder = StateGraph(AnalysisGraphState)    
-graph_builder.add_node(economic_insight_key, policy_graph, transform=make_transform(economic_insight_key))
+graph_builder.add_node(policy_key, policy_graph, transform=make_transform(policy_key))
 graph_builder.add_node(housing_faq_key, housing_faq_graph, transform=make_transform(housing_faq_key))
 graph_builder.add_node(location_insight_key, location_insight_graph, transform=make_transform(location_insight_key))
 graph_builder.add_node(nearby_market_key, nearby_market_graph, transform=make_transform(nearby_market_key))
@@ -42,7 +42,7 @@ graph_builder.add_node(unsold_insight_key, unsold_insight_graph, transform=make_
 
 def join_results(state: AnalysisGraphState) -> AnalysisGraphState:
     analysis_outputs = {
-        economic_insight_key: state.get(f"{economic_insight_key}_output"),
+        policy_key: state.get(f"{policy_key}_output"),
         housing_faq_key: state.get(f"{housing_faq_key}_output"),
         location_insight_key: state.get(f"{location_insight_key}_output"),
         nearby_market_key: state.get(f"{nearby_market_key}_output"),
@@ -55,7 +55,7 @@ def join_results(state: AnalysisGraphState) -> AnalysisGraphState:
 graph_builder.add_node("join", join_results)
 
 for node in [
-    economic_insight_key,
+    policy_key,
     housing_faq_key,
     location_insight_key,
     nearby_market_key,
