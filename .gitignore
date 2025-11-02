@@ -10,3 +10,5 @@ wheels/
 .venv
 .env
 pgdata/
+credentials.json
+token.json
