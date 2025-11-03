@@ -140,6 +140,11 @@ def agent(state: LocationInsightState) -> LocationInsightState:
     new_messages = messages + [response]
     new_state = {**state, messages_key: new_messages}
     new_state[output_key] = response.content
+    new_state[output_key] = {
+        "result": response.content,
+        rag_context_key: state[rag_context_key],
+        web_context_key: state[web_context_key],
+    }
     return new_state
 
 

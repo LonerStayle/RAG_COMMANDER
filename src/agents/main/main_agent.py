@@ -13,7 +13,7 @@ from prompts import PromptManager, PromptType
 from agents.analysis.analysis_graph import analysis_graph
 from agents.jung_min_jae.jung_min_jae_agent import report_graph
 from copy import deepcopy
-from tools.send_gmail import gmail_authenticate, send_markdown_as_html
+# from tools.send_gmail import gmail_authenticate, send_markdown_as_html
 
 start_llm = LLMProfile.chat_bot_llm()
 messages_key = MainState.KEY.messages
@@ -25,7 +25,7 @@ status_key = MainState.KEY.status
 def start_confirmation(
     state: MainState,
 ) -> Command[Literal["start", "__end__"]]:
-    gmail_authenticate()
+    # gmail_authenticate()
     parser_llm = start_llm.with_structured_output(StartConfirmation)
 
     messages_str = get_buffer_string(messages=state[messages_key])
@@ -61,7 +61,7 @@ async def analysis_graph_node(state: MainState) -> MainState:
         {"start_input": deepcopy(state[start_input_key])}
     )
     return {
-        "analysis_outputs": result.get("analysis_outputs", {}),
+        "analysis_outputs": result.get("analysis_outputs", {}),        
         status_key: "JUNG_MIN_JAE",
     }
 
@@ -77,17 +77,20 @@ def jung_min_jae_graph(state: MainState) -> MainState:
     )
 
     # 11월 3일 시연용
-    target_area_key = StartInput.KEY.target_area
-    main_type_key = StartInput.KEY.main_type
-    target_area = start_input[target_area_key]
-    main_type = start_input[main_type_key]
-    gmail_title = f"사업지: {target_area}, 규모 및 세대수:{main_type}"
-    send_markdown_as_html(
-        md_content=result["final_report"],
-        to="immortal0900@gmail.com",
-        title=gmail_title,
-    )
+    # target_area_key = StartInput.KEY.target_area
+    # main_type_key = StartInput.KEY.main_type
+    # target_area = start_input[target_area_key]
+    # main_type = start_input[main_type_key]
+    # gmail_title = f"사업지: {target_area}, 규모 및 세대수:{main_type}"
+    # send_markdown_as_html(
+    #     md_content=result["final_report"],
+    #     to="immortal0900@gmail.com",
+    #     title=gmail_title,
+    # )
     return {"final_report": result["final_report"], status_key: "RENDERING"}
+
+def renderer_agent_graph():
+    return {} 
 
 
 graph_builder = StateGraph(MainState)

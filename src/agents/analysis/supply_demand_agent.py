@@ -86,6 +86,8 @@ def supply_housing(state: SupplyDemandState) -> SupplyDemandState:
 
 # 청약 경쟁률
 from tools.pre_promise_competition_tool_v2 import pre_promise
+
+
 async def pre_pomise_competition(state: SupplyDemandState) -> SupplyDemandState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
@@ -257,7 +259,20 @@ def agent(state: SupplyDemandState) -> SupplyDemandState:
     response = llm_with_tools.invoke(messages)
     new_messages = messages + [response]
     new_state = {**state, messages_key: new_messages}
-    new_state[output_key] = response.content
+    new_state[output_key] = {
+        "result": response.content,
+        year10_after_house_key: state[year10_after_house_key],
+        jeonse_price_key: state[jeonse_price_key],
+        sale_price_key: state[sale_price_key],
+        trade_balance_key: state[trade_balance_key],
+        use_kor_rate_key: state[use_kor_rate_key],
+        home_mortgage_key: state[home_mortgage_key],
+        one_people_gdp_key: state[one_people_gdp_key],
+        one_people_grdp_key: state[one_people_grdp_key],
+        housing_sales_volume_key: state[housing_sales_volume_key],
+        planning_move_key: state[planning_move_key],
+        pre_pomise_competition_key: state[pre_pomise_competition_key],
+    }
     return new_state
 
 
