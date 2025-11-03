@@ -102,7 +102,10 @@ def agent(state: UnsoldInsightState) -> UnsoldInsightState:
     response = llm_with_tools.invoke(messages)
     new_messages = messages + [response]
     new_state = {**state, messages_key: new_messages}
-    new_state[output_key] = response.content
+    new_state[output_key] = {
+        "result": response.content,
+        unsold_unit_key: state[unsold_unit_key],
+    }
     return new_state
 
 

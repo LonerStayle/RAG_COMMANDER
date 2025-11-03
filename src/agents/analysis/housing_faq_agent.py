@@ -74,7 +74,11 @@ def call_llm(state: HousingFaqState) -> HousingFaqState:
     response = llm.invoke(messages)
     new_messages = messages + [response]
     new_state = {**state, messages_key: new_messages}
-    new_state[output_key] = response.content
+    new_state[output_key] = {
+        "result": response.content,
+        housing_faq_context_key: state[housing_faq_context_key],
+        housing_rule_context_key: state[housing_rule_context_key],
+    }
     return new_state
 
 
