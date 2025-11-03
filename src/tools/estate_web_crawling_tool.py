@@ -140,7 +140,10 @@ def _collect_articles(max_page: int = MAX_PAGE):
 
     return articles
 
+
 from utils.llm import LLMProfile
+
+
 def collect_articles_result():
     articles = _collect_articles()
     print(articles)
@@ -167,8 +170,9 @@ def collect_articles_result():
         """
     )
     result = json.loads(llm.content)
-    
+
     return result
+
 
 # def build_output_path(base_dir=DATA_ROOT):
 #     base_dir = Path(base_dir)
