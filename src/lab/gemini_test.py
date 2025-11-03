@@ -1,4 +1,4 @@
-from google import genai
+import google.genai as genai
 from dotenv import load_dotenv
 load_dotenv()
 import os

@@ -11,6 +11,9 @@ class LocationInsightState(TypedDict):
     location_insight_output: dict
     rag_context: Optional[str]
     web_context: Optional[str]
+    kakao_api_distance_context: Optional[str]
+    gemini_search: Optional[str]
+    perplexity_search: Optional[str]
     messages: Annotated[list[AnyMessage], add_messages]
     my_tool: str
 
@@ -82,7 +85,7 @@ class UnsoldInsightState(TypedDict):
 
 @attach_auto_keys
 class AnalysisGraphState(TypedDict, total=False):
-    
+
     location_insight_output: dict
     policy_output: dict
     housing_faq_output: dict
@@ -90,10 +93,10 @@ class AnalysisGraphState(TypedDict, total=False):
     population_insight_output: dict
     supply_demand_output: dict
     unsold_insight_output: dict
-    
+
     # (Main → 상위 → 하위 전달용 입니다.)
     start_input: Annotated[dict, operator.or_]
-    
+
     analysis_outputs: Annotated[Dict[str, dict], operator.or_]
     """
     ** analysis_outputs 키 정보 **
@@ -143,8 +146,3 @@ class AnalysisGraphState(TypedDict, total=False):
         - planning_move
         - pre_pomise_competition
     """
-    
-    
-    
-
-    

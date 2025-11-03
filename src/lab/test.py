@@ -43,6 +43,27 @@ sys.path.insert(0, str(project_root / "src"))
     # 평당매매가격 OR 평당분양가격:
     # 거리:
     # 비고:
-from src.tools.pre_pomise_competition_tool import search_by_address
-result = search_by_address("송파구 마천동 299-23")
+from tools.gemini_search_tool import gemini_search
+result = gemini_search("""
+<CONTEXT>
+주소:송파구 마천동 299-23
+규모: 1000세대
+타입: 84m²
+</CONTEXT>
+<GOAL>
+<CONTEXT> 주변 분양호재를 <OUTPUT>을 참조해서 json 형식으로 출력해주세요
+</GOAL>
+<OUTPUT>
+{
+  "분양호재": [
+    {
+      "name": "",
+      "location": "",
+      "description": "",
+      "status": ""
+    },
+  ]
+}
+</OUTPUT>
+""")
 print(result)
