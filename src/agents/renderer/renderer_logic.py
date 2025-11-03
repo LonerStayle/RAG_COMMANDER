@@ -1,342 +1,266 @@
 from __future__ import annotations
 import os
-import json
-from typing import Dict, List, Any, Optional
+import uuid
+from typing import Dict, Any, List
 
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
-SCOPES = [
-    "https://www.googleapis.com/auth/presentations",
-    "https://www.googleapis.com/auth/drive.file",
-]
+# -----------------------------
+# 0) Google Slides OAuth
+# -----------------------------
+from utils.util import get_project_root
+SCOPES = ["https://www.googleapis.com/auth/presentations"]
+CREDENTIALS = str(get_project_root() / "credentials.json")  
+TOKEN = str(get_project_root() / "token.json")  
 
-# -------------------------------------------------
-# Auth & service
-# -------------------------------------------------
-def get_slides_service(
-    credentials_path: str = "credentials.json",
-    token_path: str = "token.json",
-):
+def get_slides_service():
     creds = None
-    if os.path.exists(token_path):
-        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
+    if os.path.exists(TOKEN):
+        creds = Credentials.from_authorized_user_file(TOKEN, SCOPES)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS, SCOPES)
             creds = flow.run_local_server(port=0)
-        with open(token_path, "w", encoding="utf-8") as f:
+        with open(TOKEN, "w", encoding="utf-8") as f:
             f.write(creds.to_json())
-
     return build("slides", "v1", credentials=creds)
 
+# -----------------------------
+# 1) 레이아웃(PT 단위) & 스타일
+# -----------------------------
+PAGE_W, PAGE_H = 720, 405    # Google Slides 기본(10in x 5.625in) → 1in = 72pt
+MARGIN_X = 36
+TITLE_Y = 18
+TITLE_H = 32
+LEAD_Y = TITLE_Y + TITLE_H + 8
+LEAD_H = 56
 
-# -------------------------------------------------
-# Helpers
-# -------------------------------------------------
-def _px(pt: float) -> dict:
-    return {"magnitude": pt, "unit": "PT"}
+GRID_TOP = LEAD_Y + LEAD_H + 12
+GRID_LEFT = MARGIN_X
+GRID_RIGHT = PAGE_W - MARGIN_X
+GRID_W = GRID_RIGHT - GRID_LEFT
+GRID_H = PAGE_H - GRID_TOP - 20
 
-def _create_slide(page_id: str | None = None) -> dict:
-    return {
-        "createSlide": {
-            **({"objectId": page_id} if page_id else {}),
-            "slideLayoutReference": {"predefinedLayout": "BLANK"}
-        }
-    }
+GAP = 12
+COLS, ROWS = 2, 2
+CELL_W = (GRID_W - GAP) / COLS
+CELL_H = (GRID_H - GAP) / ROWS
 
-def _create_textbox(page_id: str, object_id: str, x: float, y: float, w: float, h: float) -> dict:
+# 글꼴/색
+FONT_FAMILY = "Noto Sans"
+FS_TITLE = 24       # 대제목
+FS_LEAD  = 18       # 리드(골드)
+FS_LABEL = 14       # 소제목 라벨
+FS_ITEM  = 11       # 본문 항목
+
+COLOR_BLACK = {"red": 0, "green": 0, "blue": 0}
+COLOR_GOLD  = {"red": 0.82, "green": 0.72, "blue": 0.47}  # #D1B875 유사
+
+# -----------------------------
+# 2) Slides API 헬퍼
+# -----------------------------
+def _rgb(color):  # API용 RGB 구조
+    return {"opaqueColor": {"rgbColor": color}}
+
+def _pt(v):       # magnitude wrapper
+    return {"magnitude": float(v), "unit": "PT"}
+
+def new_id(prefix="obj"):
+    return f"{prefix}_{uuid.uuid4().hex[:8]}"
+
+def create_presentation(svc, title: str) -> str:
+    pres = svc.presentations().create(body={"title": title}).execute()
+    return pres["presentationId"]
+
+def add_blank_slide(svc, pres_id: str) -> str:
+    requests = [{"createSlide": {"slideLayoutReference": {"predefinedLayout": "BLANK"}}}]
+    res = svc.presentations().batchUpdate(presentationId=pres_id, body={"requests": requests}).execute()
+    return res["replies"][0]["createSlide"]["objectId"]
+
+def req_create_textbox(page_id: str, object_id: str, x, y, w, h):
     return {
         "createShape": {
             "objectId": object_id,
             "shapeType": "TEXT_BOX",
             "elementProperties": {
                 "pageObjectId": page_id,
-                "size": {"width": _px(w), "height": _px(h)},
-                "transform": {
-                    "scaleX": 1, "scaleY": 1,
-                    "translateX": x, "translateY": y,
-                    "unit": "PT",
-                },
+                "size": {"width": _pt(w), "height": _pt(h)},
+                "transform": {"scaleX": 1, "scaleY": 1, "translateX": x, "translateY": y, "unit": "PT"},
             },
         }
     }
 
-def _insert_text(object_id: str, text: str, cell_location: Optional[dict] = None) -> dict:
-    req = {"insertText": {"objectId": object_id, "text": text}}
-    if cell_location:
-        req["insertText"]["cellLocation"] = cell_location
-    return req
+def req_insert_text(object_id: str, text: str):
+    return {"insertText": {"objectId": object_id, "insertionIndex": 0, "text": text}}
 
-def _text_style_all(object_id: str, **style) -> dict:
-    # style e.g. bold=True, fontSize={"magnitude": 24, "unit":"PT"}
+def req_text_style(object_id: str, start: int, end: int, size: int, bold=False, color=None):
+    style = {"fontFamily": FONT_FAMILY, "fontSize": _pt(size), "bold": bold}
+    fields = "fontFamily,fontSize,bold"
+    if color:
+        style["foregroundColor"] = _rgb(color)
+        fields += ",foregroundColor"
     return {
         "updateTextStyle": {
             "objectId": object_id,
+            "textRange": {"type": "FIXED_RANGE", "startIndex": start, "endIndex": end},
             "style": style,
-            "textRange": {"type": "ALL"},
-            "fields": ",".join(style.keys()),
+            "fields": fields,
         }
     }
 
-def _para_style_all(object_id: str, **style) -> dict:
-    # style e.g. lineSpacing=110
+def req_paragraph_style(object_id: str, start: int, end: int, align="START", line_spacing=115):
     return {
         "updateParagraphStyle": {
             "objectId": object_id,
-            "style": style,
-            "textRange": {"type": "ALL"},
-            "fields": ",".join(style.keys()),
+            "textRange": {"type": "FIXED_RANGE", "startIndex": start, "endIndex": end},
+            "style": {"alignment": align, "lineSpacing": line_spacing},
+            "fields": "alignment,lineSpacing",
         }
     }
 
-def _make_bullets(object_id: str) -> dict:
-    return {
+# def req_bullets(object_id: str, start: int, end: int):
+#     # 하이픈(- )으로 시작하는 라인들을 실제 불릿으로 변환
+#     return {
+#         "createParagraphBullets": {
+#             "objectId": object_id,
+#             "textRange": {"type": "FIXED_RANGE", "startIndex": start, "endIndex": end},
+#             "bulletPreset": "BULLET_DISC_CIRCLE_SQUARE",
+#         }
+#     }
+def safe_bullets(object_id: str, text: str):
+    reqs = []
+    text_len = len(text)
+    # 비어 있으면 bullets 안 건다
+    if text_len == 0:
+        return reqs
+    # 최소 1글자 이상일 때만 bullets
+    reqs.append({
         "createParagraphBullets": {
             "objectId": object_id,
-            "textRange": {"type": "ALL"},
+            "textRange": {
+                "type": "FIXED_RANGE",
+                "startIndex": 0,
+                "endIndex": text_len
+            },
             "bulletPreset": "BULLET_DISC_CIRCLE_SQUARE",
         }
-    }
+    })
+    return reqs
 
-def _create_table(page_id: str, object_id: str, rows: int, cols: int,
-                  x: float, y: float, w: float, h: float) -> dict:
-    return {
-        "createTable": {
-            "objectId": object_id,
-            "elementProperties": {
-                "pageObjectId": page_id,
-                "size": {"width": _px(w), "height": _px(h)},
-                "transform": {
-                    "scaleX": 1, "scaleY": 1,
-                    "translateX": x, "translateY": y,
-                    "unit": "PT",
-                },
-            },
-            "rows": rows,
-            "columns": cols,
-        }
-    }
+# -----------------------------
+# 3) 렌더링 유틸
+# -----------------------------
+def clamp_lines(lines: List[str], max_lines: int = 6, max_chars_per_line: int = 120) -> List[str]:
+    """레이아웃 넘침 방지를 위해 줄 수와 글자 수를 대략 제한"""
+    out = []
+    for ln in lines:
+        s = ln.strip()
+        if len(s) > max_chars_per_line:
+            s = s[: max_chars_per_line - 1] + "…"
+        out.append(s)
+        if len(out) >= max_lines:
+            break
+    return out
 
-def _safe_join_lines(lines: List[str]) -> str:
-    # 불릿용 문자열
-    return "\n".join([l if l is not None else "" for l in lines])
+def grid_cell_xywh(col: int, row: int):
+    x = GRID_LEFT + col * (CELL_W + GAP)
+    y = GRID_TOP + row * (CELL_H + GAP)
+    return x, y, CELL_W, CELL_H
 
-def _title_with_part(title: str, part: Optional[int]) -> str:
-    if part and part > 1:
-        return f"{title} (part {part})"
-    return title
+# -----------------------------
+# 4) 슬라이드 렌더링 (type="text")
+# -----------------------------
+def render_text_slide_requests(page_id: str, slide: Dict[str, Any]) -> List[Dict[str, Any]]:
+    reqs: List[Dict[str, Any]] = []
 
-# -------------------------------------------------
-# Slide renderers
-# -------------------------------------------------
-def _render_bluf(slides, presentation_id: str, page_id: str, slide: dict):
-    reqs = []
-    # Heading
-    head_id = f"{page_id}_heading"
-    reqs.append(_create_textbox(page_id, head_id, x=40, y=40, w=800, h=60))
-    reqs.append(_insert_text(head_id, slide.get("heading", "Executive Summary")))
-    reqs.append(_text_style_all(head_id, bold=True, fontSize=_px(28)))
-    reqs.append(_para_style_all(head_id, lineSpacing=110))
+    # -- 4.1 Title (가운데)
+    title_id = new_id("title")
+    title = (slide.get("title") or "").strip()
+    if title and not title.endswith("\n"):
+        title += "\n"
+    reqs += [
+        req_create_textbox(page_id, title_id, MARGIN_X, TITLE_Y, PAGE_W - 2 * MARGIN_X, TITLE_H),
+        req_insert_text(title_id, title),
+        req_text_style(title_id, 0, len(title), FS_TITLE, bold=True, color=COLOR_BLACK),
+        req_paragraph_style(title_id, 0, len(title), align="CENTER", line_spacing=110),
+    ]
 
-    # Bullets
-    bullets_id = f"{page_id}_bullets"
-    bullets = slide.get("bullets", [])
-    reqs.append(_create_textbox(page_id, bullets_id, x=40, y=120, w=840, h=380))
-    reqs.append(_insert_text(bullets_id, _safe_join_lines(bullets)))
-    reqs.append(_make_bullets(bullets_id))
-    reqs.append(_text_style_all(bullets_id, fontSize=_px(16)))
-    reqs.append(_para_style_all(bullets_id, lineSpacing=115))
+    # -- 4.2 Lead (골드, 요약 인사이트)
+    lead_id = new_id("lead")
+    lead = (slide.get("lead") or "").strip()
+    if lead and not lead.endswith("\n"):
+        lead += "\n"
+    reqs += [
+        req_create_textbox(page_id, lead_id, MARGIN_X, LEAD_Y, PAGE_W - 2 * MARGIN_X, LEAD_H),
+        req_insert_text(lead_id, lead),
+        req_text_style(lead_id, 0, len(lead), FS_LEAD, bold=True, color=COLOR_GOLD),
+        req_paragraph_style(lead_id, 0, len(lead), align="START", line_spacing=100),
+    ]
+
+    # -- 4.3 2x2 Grid (groups 최대 4개)
+    groups = slide.get("groups") or []
+    # 4개 초과면 파트 나누는 건 여기서 처리하지 않고, 호출부에서 슬라이드 분할 권장
+    # (현재 입력은 각 슬라이드 정확히 4개)
+    for idx, group in enumerate(groups[:4]):
+        col, row = idx % 2, idx // 2
+        x, y, w, h = grid_cell_xywh(col, row)
+
+        # 라벨 박스 (상단)
+        label_id = new_id("label")
+        label_txt = (group.get("label") or "").strip()
+        if label_txt and not label_txt.endswith("\n"):
+            label_txt += "\n"
+        reqs += [
+            req_create_textbox(page_id, label_id, x, y, w, 26),
+            req_insert_text(label_id, label_txt),
+            req_text_style(label_id, 0, len(label_txt), FS_LABEL, bold=True, color=COLOR_BLACK),
+            req_paragraph_style(label_id, 0, len(label_txt), align="START", line_spacing=110),
+        ]
+
+        # 아이템 박스 (라벨 아래)
+        items_id = new_id("items")
+        items = group.get("items") or []
+        items = clamp_lines(items, max_lines=6, max_chars_per_line=110)
+        items_txt = "\n".join(f"- {it}" for it in items)
+        if items_txt and not items_txt.endswith("\n"):
+            items_txt += "\n"
+        reqs += [
+            req_create_textbox(page_id, items_id, x, y + 28, w, h - 30),
+            req_insert_text(items_id, items_txt),
+            req_text_style(items_id, 0, len(items_txt), FS_ITEM, bold=False, color=COLOR_BLACK),
+            req_paragraph_style(items_id, 0, len(items_txt), align="START", line_spacing=120),
+            # req_bullets(items_id, 0, len(items_txt)),
+        ]
+        reqs += safe_bullets(items_id, items_txt)
 
     return reqs
 
-def _render_title(slides, presentation_id: str, page_id: str, slide: dict):
-    reqs = []
-    title_id = f"{page_id}_title"
-    sub_id = f"{page_id}_subtitle"
-    reqs.append(_create_textbox(page_id, title_id, x=80, y=180, w=760, h=80))
-    reqs.append(_insert_text(title_id, slide.get("heading", "")))
-    reqs.append(_text_style_all(title_id, bold=True, fontSize=_px(36)))
-    reqs.append(_create_textbox(page_id, sub_id, x=80, y=260, w=760, h=60))
-    reqs.append(_insert_text(sub_id, slide.get("subheading", "")))
-    reqs.append(_text_style_all(sub_id, fontSize=_px(20)))
-    return reqs
-
-def _render_text(slides, presentation_id: str, page_id: str, slide: dict):
-    reqs = []
-    # Title
-    title_id = f"{page_id}_title"
-    reqs.append(_create_textbox(page_id, title_id, x=40, y=30, w=840, h=50))
-    reqs.append(_insert_text(title_id, _title_with_part(slide.get("title",""), slide.get("part"))))
-    reqs.append(_text_style_all(title_id, bold=True, fontSize=_px(24)))
-
-    # Lead (optional)
-    y_cursor = 90
-    if slide.get("lead"):
-        lead_id = f"{page_id}_lead"
-        reqs.append(_create_textbox(page_id, lead_id, x=40, y=y_cursor, w=840, h=60))
-        reqs.append(_insert_text(lead_id, slide["lead"]))
-        reqs.append(_text_style_all(lead_id, bold=False, fontSize=_px(16)))
-        reqs.append(_para_style_all(lead_id, lineSpacing=115))
-        y_cursor += 70
-
-    # Groups
-    groups: List[dict] = slide.get("groups", [])
-    box_height = 120  # 한 그룹당 높이
-    for idx, g in enumerate(groups):
-        label = g.get("label", "기타")
-        items = g.get("items", [])
-        sources = g.get("sources", [])
-
-        # label
-        lid = f"{page_id}_g{idx}_label"
-        reqs.append(_create_textbox(page_id, lid, x=40, y=y_cursor, w=840, h=24))
-        reqs.append(_insert_text(lid, label))
-        reqs.append(_text_style_all(lid, bold=True, fontSize=_px(16)))
-
-        # items (bullets)
-        bid = f"{page_id}_g{idx}_bullets"
-        reqs.append(_create_textbox(page_id, bid, x=60, y=y_cursor+26, w=820, h=box_height-26-18))
-        if items:
-            reqs.append(_insert_text(bid, _safe_join_lines(items)))
-            reqs.append(_make_bullets(bid))
-        else:
-            reqs.append(_insert_text(bid, "-"))
-            reqs.append(_make_bullets(bid))
-        reqs.append(_text_style_all(bid, fontSize=_px(14)))
-        reqs.append(_para_style_all(bid, lineSpacing=115))
-
-        # sources (small text under group)
-        if sources:
-            sid = f"{page_id}_g{idx}_src"
-            reqs.append(_create_textbox(page_id, sid, x=60, y=y_cursor+box_height-18, w=820, h=16))
-            reqs.append(_insert_text(sid, "출처: " + " | ".join(sources)))
-            reqs.append(_text_style_all(sid, fontSize=_px(10)))
-
-        y_cursor += box_height
-
-    # slide-level sources
-    slide_sources = slide.get("sources", [])
-    if slide_sources:
-        sid = f"{page_id}_slide_src"
-        reqs.append(_create_textbox(page_id, sid, x=40, y=500, w=840, h=16))
-        reqs.append(_insert_text(sid, "출처: " + " | ".join(slide_sources)))
-        reqs.append(_text_style_all(sid, fontSize=_px(10)))
-
-    return reqs
-
-def _render_table(slides, presentation_id: str, page_id: str, slide: dict):
-    reqs = []
-    # Title
-    title_id = f"{page_id}_title"
-    reqs.append(_create_textbox(page_id, title_id, x=40, y=30, w=840, h=50))
-    reqs.append(_insert_text(title_id, slide.get("title", "")))
-    reqs.append(_text_style_all(title_id, bold=True, fontSize=_px(24)))
-
-    # Table
-    columns: List[str] = slide.get("columns", [])
-    rows: List[List[str]] = slide.get("rows", [])
-    total_rows = 1 + len(rows)
-    total_cols = len(columns)
-
-    table_id = f"{page_id}_table"
-    reqs.append(_create_table(page_id, table_id, rows=total_rows, cols=total_cols,
-                              x=40, y=100, w=840, h=360))
-
-    # Header row
-    for c, text in enumerate(columns):
-        reqs.append(_insert_text(
-            table_id, str(text),
-            cell_location={"rowIndex": 0, "columnIndex": c}
-        ))
-
-    # Data rows
-    for r_idx, row in enumerate(rows, start=1):
-        for c_idx, cell in enumerate(row):
-            reqs.append(_insert_text(
-                table_id, "" if cell is None else str(cell),
-                cell_location={"rowIndex": r_idx, "columnIndex": c_idx}
-            ))
-
-    # Sources
-    slide_sources = slide.get("sources", [])
-    if slide_sources:
-        sid = f"{page_id}_slide_src"
-        reqs.append(_create_textbox(page_id, sid, x=40, y=470, w=840, h=16))
-        reqs.append(_insert_text(sid, "출처: " + " | ".join(slide_sources)))
-        reqs.append(_text_style_all(sid, fontSize=_px(10)))
-
-    return reqs
-
-
-from utils.util import get_project_root
-import uuid
-def _new_id(prefix: str, idx: int | None = None) -> str:
-    """Slides objectId 규격(5~50자) 만족 & 충돌 최소화"""
-    base = f"{prefix}_{idx:04d}_" if idx is not None else f"{prefix}_"
-    suf = uuid.uuid4().hex[:8]
-    oid = f"{base}{suf}"
-    # 5~50자 사이로 잘라주기
-    return oid[:50] if len(oid) > 50 else oid
-
-def render_slice_plan(slice_plan: Dict[str, Any],
-                      credentials_path: str = str(get_project_root() / "credentials.json"),
-                      token_path: str = str(get_project_root() / "token.json")) -> dict:
-    """
-    slice_plan(dict) → Google Slides
-    return: {"presentationId": ..., "url": ...}
-    """
-    svc = get_slides_service(credentials_path, token_path)
+# ----------------------------- 
+# 5) 메인 렌더러
+# -----------------------------
+def render_sliceplan(slice_plan: Dict[str, Any]) -> Dict[str, Any]:
+    """SlicePlan(JSON dict) → Google Slides 생성"""
+    svc = get_slides_service()
     meta = slice_plan.get("meta", {})
-    title = meta.get("title") or "<제목 없음>"
+    title = meta.get("title") or "Untitled Report"
 
-    pres = svc.presentations().create(body={"title": title}).execute()
-    pres_id = pres["presentationId"]
+    pres_id = create_presentation(svc, title)
 
-    # 첫 슬라이드는 기본 생성됨. 우리는 전부 BLANK를 쓰므로 기본 슬라이드는 버리고 새로 만든 뒤 삭제해도 됨.
-    # 여기서는 그냥 추가만 하고 마지막에 기본 슬라이드 삭제(선택) 가능.
-    requests: List[dict] = []
-    auto_delete_first_slide = True
+    # slides 순회: type=="text"만 처리
+    for slide in slice_plan.get("slides", []):
+        if slide.get("type") != "text":
+            # 필요시 'bluf'/'table' 타입 추가 처리 가능
+            continue
+        page_id = add_blank_slide(svc, pres_id)
+        reqs = render_text_slide_requests(page_id, slide)
+        if reqs:
+            svc.presentations().batchUpdate(presentationId=pres_id, body={"requests": reqs}).execute()
 
-    pages_to_delete: List[str] = []
-    if auto_delete_first_slide and pres.get("slides"):
-        pages_to_delete.append(pres["slides"][0]["objectId"])
-
-    # Build requests
-    for idx, slide in enumerate(slice_plan.get("slides", [])):
-        page_id = _new_id("page", idx+1) 
-        requests.append(_create_slide(page_id))
-
-        t = slide.get("type")
-        if t == "bluf":
-            requests += _render_bluf(svc, pres_id, page_id, slide)
-        elif t == "title":
-            requests += _render_title(svc, pres_id, page_id, slide)
-        elif t == "text":
-            requests += _render_text(svc, pres_id, page_id, slide)
-        elif t == "table":
-            requests += _render_table(svc, pres_id, page_id, slide)
-        else:
-            # 미지원 타입은 빈 텍스트 슬라이드로 대체
-            requests += _render_text(svc, pres_id, page_id, {
-                "title": f"Unsupported type: {t}",
-                "groups": [{"label": "원본", "items": [json.dumps(slide, ensure_ascii=False)]}],
-            })
-
-    # 삭제(선택)
-    for pid in pages_to_delete:
-        requests.append({"deleteObject": {"objectId": pid}})
-
-    # Commit
-    if requests:
-        svc.presentations().batchUpdate(
-            presentationId=pres_id,
-            body={"requests": requests}
-        ).execute()
-
+    # 생성된 프레젠테이션 URL 반환
     url = f"https://docs.google.com/presentation/d/{pres_id}/edit"
     return {"presentationId": pres_id, "url": url}

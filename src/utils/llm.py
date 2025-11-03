@@ -1,6 +1,6 @@
 from enum import StrEnum
 from langchain_openai import ChatOpenAI
-
+from langchain_anthropic import AnthropicLLM
 
 class ModelName(StrEnum):
     GPT_4_1_MINI = "gpt-4.1-mini"
@@ -14,6 +14,8 @@ class ModelName(StrEnum):
 
 
 class LLMProfile(StrEnum):
+    CLAUDE = ModelName.CLAUDE_SONNET_4_5_20250929
+    
     # 개발자가 사용할 LLM 
     DEV = ModelName.GPT_4_1_MINI.value
 
@@ -25,7 +27,15 @@ class LLMProfile(StrEnum):
 
     # 보고서 작성용 LLM
     REPORT = ModelName.GPT_5.value
-
+    @staticmethod
+    def cloud_llm():
+        return AnthropicLLM(
+            model_name=LLMProfile.CLAUDE.value,
+            temperature=0.0,
+            max_tokens=32000
+        )
+        
+        
     @staticmethod
     def dev_llm():
         return ChatOpenAI(
