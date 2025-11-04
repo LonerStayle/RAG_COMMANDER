@@ -32,22 +32,22 @@ LOCATION_INSIGHT_HUMAN:
     - 타겟지역: {target_area}
     - 주요타입: {main_type}
     - 전체세대수: {total_units}
-    - 목표일 기준: {date}
-    - 호재정보: {gemini_search}
+    - 일시: {date}
+    - 주변호재: {gemini_search}
     - 입지정보: {kakao_api_distance_context}
-    - 해당지역 정보: {perplexity_search}
+    - 해당지역 정보/주변호재: {perplexity_search}
     </CONTEXT>
 
 
 
     <GOAL>
-    - <CONTEXT>를 참고하여 입지정보, 호재정보, 해당지역 정보를 json 형식으로 출력해주세요.
+    - <CONTEXT>를 참고하여 입지정보, 주변호재, 해당지역 정보를 json 형식으로 출력해주세요.
     </GOAL>
 
     <OUTPUT>
     - json 형식으로 출력해주세요
     - 입지정보:
-    - 호재정보:
+    - 주변호재:
     - 해당지역 정보:
     </OUTPUT>
 

@@ -68,19 +68,23 @@ def gemini_search_tool(state: LocationInsightState) -> LocationInsightState:
     target_area = start_input[target_area_key]
     main_type = start_input[main_type_key]
     total_units = start_input[total_units_key]
+    date = get_today_str()
 
     prompt = f"""
     <CONTEXT>
     주소: {target_area}
     규모: {total_units}세대
     타입: {main_type}
+    일시: {date}
     </CONTEXT>
     <GOAL>
-    <CONTEXT> 주변 분양호재를 <OUTPUT>을 참조해서 json 형식으로 출력해주세요
+    - <CONTEXT>에 나와 있는 정보를 참고해서 해당 사업지에 맞는 핵심 데이터 선별을 위해 부동산과 관련된 해당지역에 구매성향과 패턴을 추려서 출력해주세요.
+    - <CONTEXT>를 참고해서 {date} 이후의 주변호재를 <OUTPUT>을 참조해서 "json 형식" 으로만만 출력해주세요
     </GOAL>
     <OUTPUT>
     {{
-      "분양호재": [
+      "해당지역 특징": []
+      "주변호재": [
         {{
           "name": "",
           "location": "",
@@ -105,6 +109,7 @@ def perplexity_search_tool(state: LocationInsightState) -> LocationInsightState:
     main_type = start_input[main_type_key]
     total_units = start_input[total_units_key]
     date = get_today_str()
+    gemini_search = state.get(gemini_search_key)
 
     prompt = f"""
     <CONTEXT>
@@ -112,17 +117,32 @@ def perplexity_search_tool(state: LocationInsightState) -> LocationInsightState:
     규모: {total_units}세대
     타입: {main_type}
     일시: {date}
-    해당 목표일에 주소에서 아파트 분양을 계획하고 있습니다.
+    - 해당 목표일과 주소에서 아파트 분양을 계획하고 있습니다.
     </CONTEXT>
 
+    <GEMINI_SEARCH>
+    {gemini_search}
+    </GEMINI_SEARCH>
+
+    <주변호재 정의>
+     ## 교통 호재
+     - 지하철 신설, 역 개통, 도로 건설, GTX 등 광역철도 개통 등 교통 인프라 개선이 대표적입니다. 이전 대화에서 언급된 GTX-A/C 삼성역 개통이 바로 교통 호재의 예시입니다.​
+
+     ## 직장 및 일자리 호재
+     - 대기업 입주, 산업단지 조성, 대형 쇼핑몰·복합몰 건설 등 일자리와 유동인구 증가를 가져오는 요소입니다. 현대자동차 GBC 같은 대규모 업무시설이 이에 해당합니다.​
+
+     ## 인프라 및 생활환경 호재
+     - 재개발·재건축 사업, 대형 공원 조성, 학군 개선, 대형마트·병원 등 편의시설 증대가 포함됩니다. 이전 대화의 영동대로 지하공간 복합개발이나 개포주공 재건축이 대표적인 예시입니다.
+    </주변호재 정의>
+
     <GOAL>
-    - <CONTEXT>에 나와 있는 스펙으로 해당 사업지에 맞는 핵심 데이터 선별을 위해해 부동산과 관련된 해당지역에 관한 특징을 추려서 출력해주세요.
-    - <CONTEXT> 주변 분양호재를 <OUTPUT>을 참조해서 json 형식으로 출력해주세요
+    - <GEMINI_SEARCH>의 내용을 검색해서 해당 내용이 사실인지 확인해보고 사실이라면, <OUTPUT>의 형식에 맞춰 그대로 json 형식으로 출력하고 사실이 아니라면 검색 결과로 나온 사실을 json 형식으로 출력하세요.
     </GOAL>
+
     <OUTPUT>
     {{
       "해당지역 특징": []
-      "분양호재": [
+      "주변호재": [
         {{
           "name": "",
           "location": "",
@@ -152,9 +172,9 @@ def analysis_setting(state: LocationInsightState) -> LocationInsightState:
     target_area = start_input[target_area_key]
     total_units = start_input[total_units_key]
     main_type = start_input[main_type_key]
-    gemini_search = state[gemini_search_key]
-    kakao_api_distance_context = state[kakao_api_distance_context_key]
-    perplexity_search = state[perplexity_search_key]
+    gemini_search = state.get(gemini_search_key, "")
+    kakao_api_distance_context = state.get(kakao_api_distance_context_key, {})
+    perplexity_search = state.get(perplexity_search_key, "")
 
     system_prompt = PromptManager(PromptType.LOCATION_INSIGHT_SYSTEM).get_prompt()
     human_prompt = PromptManager(PromptType.LOCATION_INSIGHT_HUMAN).get_prompt(
@@ -178,11 +198,12 @@ def agent(state: LocationInsightState) -> LocationInsightState:
     response = llm_with_tools.invoke(messages)
     new_messages = messages + [response]
     new_state = {**state, messages_key: new_messages}
+    # new_state[output_key] = response.content
     new_state[output_key] = {
-        "result":response.content,
-        gemini_search_key : state[gemini_search_key],
-        kakao_api_distance_context_key : state[kakao_api_distance_context_key],
-        perplexity_search_key : state[perplexity_search_key]
+        "result": response.content,
+        gemini_search_key: state[gemini_search_key],
+        kakao_api_distance_context_key: state[kakao_api_distance_context_key],
+        perplexity_search_key: state[perplexity_search_key],
     }
     return new_state
 
@@ -215,10 +236,9 @@ graph_builder.add_node(agent_key, agent)
 
 graph_builder.add_edge(START, gemini_search_key)
 graph_builder.add_edge(START, kakao_api_distance_key)
-graph_builder.add_edge(START, perplexity_search_key)
 
 
-graph_builder.add_edge(gemini_search_key, analysis_setting_key)
+graph_builder.add_edge(gemini_search_key, perplexity_search_key)
 graph_builder.add_edge(kakao_api_distance_key, analysis_setting_key)
 graph_builder.add_edge(perplexity_search_key, analysis_setting_key)
 graph_builder.add_edge(analysis_setting_key, agent_key)
