@@ -51,6 +51,10 @@ LOCATION_INSIGHT_HUMAN:
     - 해당지역 정보:
     </OUTPUT>
 
+    <rule>
+    - {gemini_search}의 검색결과가 사실인지 perplexity_search tool 을 활용해서 검증하는 과정을 거쳐야 합니다.
+    </rule>
+
 
   input_variables:
     - target_area

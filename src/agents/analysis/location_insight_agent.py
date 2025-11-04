@@ -54,13 +54,13 @@ kakao_api_distance_context_key = LocationInsightState.KEY.kakao_api_distance_con
 gemini_search_key = LocationInsightState.KEY.gemini_search
 perplexity_search_key = LocationInsightState.KEY.perplexity_search
 
+from tools.gemini_search_tool import gemini_search
+from tools.perplexity_search_tool import perplexity_search
 
 llm = LLMProfile.analysis_llm()
-tool_list = [think_tool]
+tool_list = [think_tool, perplexity_search]
 llm_with_tools = llm.bind_tools(tool_list)
 tool_node = ToolNode(tool_list)
-
-from tools.gemini_search_tool import gemini_search
 
 
 def gemini_search_tool(state: LocationInsightState) -> LocationInsightState:
@@ -99,62 +99,6 @@ def gemini_search_tool(state: LocationInsightState) -> LocationInsightState:
 
     return {gemini_search_key: result}
 
-
-from tools.perplexity_search_tool import perplexity_search
-
-
-def perplexity_search_tool(state: LocationInsightState) -> LocationInsightState:
-    start_input = state[start_input_key]
-    target_area = start_input[target_area_key]
-    main_type = start_input[main_type_key]
-    total_units = start_input[total_units_key]
-    date = get_today_str()
-    gemini_search = state.get(gemini_search_key)
-
-    prompt = f"""
-    <CONTEXT>
-    주소: {target_area}
-    규모: {total_units}세대
-    타입: {main_type}
-    일시: {date}
-    - 해당 목표일과 주소에서 아파트 분양을 계획하고 있습니다.
-    </CONTEXT>
-
-    <GEMINI_SEARCH>
-    {gemini_search}
-    </GEMINI_SEARCH>
-
-    <주변호재 정의>
-     ## 교통 호재
-     - 지하철 신설, 역 개통, 도로 건설, GTX 등 광역철도 개통 등 교통 인프라 개선이 대표적입니다. 이전 대화에서 언급된 GTX-A/C 삼성역 개통이 바로 교통 호재의 예시입니다.​
-
-     ## 직장 및 일자리 호재
-     - 대기업 입주, 산업단지 조성, 대형 쇼핑몰·복합몰 건설 등 일자리와 유동인구 증가를 가져오는 요소입니다. 현대자동차 GBC 같은 대규모 업무시설이 이에 해당합니다.​
-
-     ## 인프라 및 생활환경 호재
-     - 재개발·재건축 사업, 대형 공원 조성, 학군 개선, 대형마트·병원 등 편의시설 증대가 포함됩니다. 이전 대화의 영동대로 지하공간 복합개발이나 개포주공 재건축이 대표적인 예시입니다.
-    </주변호재 정의>
-
-    <GOAL>
-    - <GEMINI_SEARCH>의 내용을 검색해서 해당 내용이 사실인지 확인해보고 사실이라면, <OUTPUT>의 형식에 맞춰 그대로 json 형식으로 출력하고 사실이 아니라면 검색 결과로 나온 사실을 json 형식으로 출력하세요.
-    </GOAL>
-
-    <OUTPUT>
-    {{
-      "해당지역 특징": []
-      "주변호재": [
-        {{
-          "name": "",
-          "location": "",
-          "description": "",
-          "status": ""
-        }}
-      ]
-    }}
-    </OUTPUT>
-    """
-    result = perplexity_search(prompt)
-    return {perplexity_search_key: result}
 
 
 from tools.kakao_api_distance_tool import get_location_profile
@@ -203,7 +147,6 @@ def agent(state: LocationInsightState) -> LocationInsightState:
         "result": response.content,
         gemini_search_key: state[gemini_search_key],
         kakao_api_distance_context_key: state[kakao_api_distance_context_key],
-        perplexity_search_key: state[perplexity_search_key],
     }
     return new_state
 
@@ -229,18 +172,14 @@ graph_builder = StateGraph(LocationInsightState)
 graph_builder.add_node(gemini_search_key, gemini_search_tool)
 graph_builder.add_node(kakao_api_distance_key, kakao_api_distance_tool)
 graph_builder.add_node(analysis_setting_key, analysis_setting)
-graph_builder.add_node(perplexity_search_key, perplexity_search_tool)
+# graph_builder.add_node(perplexity_search_key, perplexity_search_tool)
 
 graph_builder.add_node(tools_key, tool_node)
 graph_builder.add_node(agent_key, agent)
 
 graph_builder.add_edge(START, gemini_search_key)
-graph_builder.add_edge(START, kakao_api_distance_key)
-
-
-graph_builder.add_edge(gemini_search_key, perplexity_search_key)
+graph_builder.add_edge(gemini_search_key, kakao_api_distance_key)
 graph_builder.add_edge(kakao_api_distance_key, analysis_setting_key)
-graph_builder.add_edge(perplexity_search_key, analysis_setting_key)
 graph_builder.add_edge(analysis_setting_key, agent_key)
 
 graph_builder.add_conditional_edges(agent_key, router, [tools_key, END])
