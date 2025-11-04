@@ -178,7 +178,12 @@ def agent(state: LocationInsightState) -> LocationInsightState:
     response = llm_with_tools.invoke(messages)
     new_messages = messages + [response]
     new_state = {**state, messages_key: new_messages}
-    new_state[output_key] = response.content
+    new_state[output_key] = {
+        "result":response.content,
+        gemini_search_key : state[gemini_search_key],
+        kakao_api_distance_context_key : state[kakao_api_distance_context_key],
+        perplexity_search_key : state[perplexity_search_key]
+    }
     return new_state
 
 
