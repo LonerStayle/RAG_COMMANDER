@@ -5,13 +5,10 @@ from langchain_core.tools import tool
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from utils.util import get_today_str
 from utils.llm import LLMProfile
-from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
 from prompts import PromptManager, PromptType
 from langgraph.prebuilt import ToolNode
-from tools.kostat_api import get_move_population, system_prompt
-import json
-import asyncio
+
+
 
 
 @tool(parse_docstring=False)
@@ -32,7 +29,7 @@ def think_tool(reflection: str) -> str:
 
     [나쁜 예]
     - “경제가 좋아진듯함. 분위기 좋음.”(수치·기간·단위·근거 없음)
-    - “인근 해운대의 입지지는 이렇다~”(대상 지역 외 서술)
+    - “인근 해운대의 입지는 이렇다~”(대상 지역 외 서술)
     - “향후 집값 상승 확실.”(근거 없는 단정)
 
     [검증 체크리스트]
@@ -56,6 +53,7 @@ perplexity_search_key = LocationInsightState.KEY.perplexity_search
 
 from tools.gemini_search_tool import gemini_search
 from tools.perplexity_search_tool import perplexity_search
+from tools.kakao_api_distance_tool import get_location_profile
 
 llm = LLMProfile.analysis_llm()
 tool_list = [think_tool, perplexity_search]
@@ -72,8 +70,8 @@ def gemini_search_tool(state: LocationInsightState) -> LocationInsightState:
 
     prompt = f"""
     <CONTEXT>
-    주소: {target_area}
-    규모: {total_units}세대
+    사업지: {target_area}
+    세대수: {total_units}세대
     타입: {main_type}
     일시: {date}
     </CONTEXT>
@@ -96,12 +94,7 @@ def gemini_search_tool(state: LocationInsightState) -> LocationInsightState:
     </OUTPUT>
     """
     result = gemini_search(prompt)
-
     return {gemini_search_key: result}
-
-
-
-from tools.kakao_api_distance_tool import get_location_profile
 
 
 def kakao_api_distance_tool(state: LocationInsightState) -> LocationInsightState:

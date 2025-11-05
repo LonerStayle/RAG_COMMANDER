@@ -41,6 +41,10 @@ class HousingFaqState(TypedDict):
 class NearbyMarketState(TypedDict):
     start_input: dict
     nearby_market_output: dict
+    kakao_api_distance_context: Optional[str]
+    gemini_search: Optional[str]
+    real_estate_price_context: Optional[str]
+    perplexity_search: Optional[str]
     rag_context: Optional[str]
     web_context: Optional[str]
     messages: Annotated[list[AnyMessage], add_messages]

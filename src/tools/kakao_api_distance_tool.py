@@ -1,6 +1,7 @@
 import os
 import requests
 from dotenv import load_dotenv
+from langchain_core.tools import tool
 
 load_dotenv()
 
@@ -103,7 +104,9 @@ def _get_future_value_info(coords, radius):
     return _search_keyword(coords, "재건축", radius)
 
 
+@tool
 def get_location_profile(address, radius=DEFAULT_RADIUS):
+    """주소를 좌표로 변환하고 주변 입지를 조사하고 해당 주소와 입지 사이의 거리를 검색하는 도구"""
     coords = get_coordinates(address)
     if not coords:
         return {"주소": address, "좌표": None, "메시지": "좌표를 찾지 못했습니다."}
@@ -125,24 +128,36 @@ __all__ = ["get_location_profile"]
 
 
 if __name__ == "__main__":
-    sample_address = "서울특별시 송파구 마천동 299-23"
-    profile = get_location_profile(sample_address)
+    sample_address = "서울시 강남구 도곡동 527 도곡렉슬"
+    profile = get_location_profile.invoke({"address": sample_address})
     print(profile)
 
 """
 [사용예시]
 
-import sys
-from pathlib import Path
+# 방법 1: 이 파일에서 직접 사용 (Tool 객체로 사용)
+from src.tools.kakao_api_distance_tool import get_location_profile
 
-# 프로젝트 루트를 Python 경로에 추가
-project_root = Path(__file__).parent / "RAG_COMMANDER"  # 프로젝트 경로에 맞게 수정
-sys.path.insert(0, str(project_root / "src"))
-
-from tools import get_location_profile
-
-# 사용
-result = get_location_profile("서울특별시 강남구 역삼동")
+result = get_location_profile.invoke({"address": "서울특별시 강남구 역삼동"})
 print(result)
+
+# 방법 2: 다른 파일에서 import해서 사용
+from src.tools.kakao_api_distance_tool import get_location_profile
+
+address = "서울시 강남구 도곡동 527"
+radius = 5000
+result = get_location_profile.invoke({"address": address, "radius": radius})
+print(result)
+
+# 방법 3: LangChain Agent에 Tool로 전달
+from langchain_core.agents import AgentExecutor, create_tool_calling_agent
+from langchain_openai import ChatOpenAI
+
+tools = [get_location_profile]
+llm = ChatOpenAI(model="gpt-4")
+agent = create_tool_calling_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools)
+
+result = agent_executor.invoke({"input": "서울시 강남구 역삼동 주변 입지 정보를 알려줘"})
 
 """

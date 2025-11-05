@@ -3,6 +3,7 @@ import xml.etree.ElementTree as ET
 import json
 from typing import Dict, Any, Optional, List
 from dotenv import load_dotenv
+from langchain_core.tools import tool
 import os
 
 load_dotenv()
@@ -13,7 +14,8 @@ KAKAO_API_KEY = os.getenv("KAKAO_REST_API_KEY")
 REGION_CODE_MAP = {
     # 서울특별시
     "종로구": "11110",
-    "중구": "11140",
+    "서울 중구": "11140",
+    "서울시 중구": "11140",
     "용산구": "11170",
     "성동구": "11200",
     "광진구": "11215",
@@ -27,7 +29,8 @@ REGION_CODE_MAP = {
     "서대문구": "11410",
     "마포구": "11440",
     "양천구": "11470",
-    "강서구": "11500",
+    "서울 강서구": "11500",
+    "서울시 강서구": "11500",
     "구로구": "11530",
     "금천구": "11545",
     "영등포구": "11560",
@@ -38,9 +41,12 @@ REGION_CODE_MAP = {
     "송파구": "11710",
     "강동구": "11740",
     # 부산광역시
-    "중구": "26110",
-    "서구": "26140",
-    "동구": "26170",
+    "부산 중구": "26110",
+    "부산시 중구": "26110",
+    "부산 서구": "26140",
+    "부산시 서구": "26140",
+    "부산 동구": "26170",
+    "부산시 동구": "26170",
     "영도구": "26200",
     "부산진구": "26230",
     "동래구": "26260",
@@ -49,20 +55,24 @@ REGION_CODE_MAP = {
     "해운대구": "26350",
     "사하구": "26380",
     "금정구": "26410",
-    "강서구": "26440",
+    "부산 강서구": "26440",
+    "부산시 강서구": "26440",
     "연제구": "26470",
     "수영구": "26500",
     "사상구": "26530",
     "기장군": "26710",
     # 인천광역시
-    "중구": "28110",
-    "동구": "28140",
+    "인천 중구": "28110",
+    "인천시 중구": "28110",
+    "인천 동구": "28140",
+    "인천시 동구": "28140",
     "미추홀구": "28177",
     "연수구": "28185",
     "남동구": "28200",
     "부평구": "28237",
     "계양구": "28245",
-    "서구": "28260",
+    "인천 서구": "28260",
+    "인천시 서구": "28260",
     "강화군": "28710",
     "옹진군": "28720",
     # 경기도 주요 지역
@@ -338,6 +348,27 @@ def extract_apartment_name_from_address(address: str) -> Optional[str]:
         "엘지",
         "삼성",
         "대우",
+        "푸르지오",
+        "아이파크",
+        "더샵",
+        "센트럴",
+        "포레나",
+        "트리지움",
+        "헬리오시티",
+        "현대",
+        "롯데",
+        "롯데캐슬",
+        "두산",
+        "쌍용",
+        "e편한세상",
+        "꿈에그린",
+        "위브",
+        "어울림",
+        "호반베르디움",
+        "중흥",
+        "서희",
+        "해모로",
+        "예가",
         "아파트",
     ]
 
@@ -376,23 +407,19 @@ def extract_region_code(address: str) -> Optional[str]:
     Returns:
         지역코드 (5자리 문자열) 또는 None
     """
-    # 주소에서 구/시/군 추출
+    # 긴 지역명부터 확인 (더 구체적인 매칭을 위해)
+    sorted_regions = sorted(
+        REGION_CODE_MAP.items(), key=lambda x: len(x[0]), reverse=True
+    )
+
     region_found = None
-    for region_name, code in REGION_CODE_MAP.items():
+    for region_name, code in sorted_regions:
         region_in_address = region_name in address
         if region_in_address:
             region_found = code
             break
 
-    if region_found:
-        return region_found
-
-    # "서울"이 포함된 경우 강남구로 기본값
-    has_seoul = "서울" in address
-    if has_seoul:
-        return "11680"  # 강남구
-
-    return None
+    return region_found
 
 
 def extract_xml_text(element, default="N/A"):
@@ -463,6 +490,51 @@ def match_apartment_name(cleaned_name, actual_name):
         return True
 
     return False
+
+
+def format_date_string(year_text, month_text, day_text):
+    """날짜 문자열을 두 자리 형식으로 통일"""
+    if month_text != "N/A" and len(month_text) == 1:
+        month_text = f"0{month_text}"
+    if day_text != "N/A" and len(day_text) == 1:
+        day_text = f"0{day_text}"
+    return f"{year_text}-{month_text}-{day_text}"
+
+
+def calculate_price_per_pyeong(deal_amount_text, supply_area_text, area_text):
+    """평당 가격 계산"""
+    price_per_pyeong = "N/A"
+    is_valid_amount = deal_amount_text != "N/A"
+    is_valid_supply_area = supply_area_text != "N/A"
+    is_valid_exclusive_area = area_text != "N/A"
+
+    if not is_valid_amount:
+        return price_per_pyeong
+
+    try:
+        deal_amount_num = float(deal_amount_text.replace(",", ""))
+        area_for_calc = None
+
+        if is_valid_supply_area:
+            supply_area_num = float(supply_area_text.replace(",", ""))
+            is_valid_supply = supply_area_num > 0
+            if is_valid_supply:
+                area_for_calc = supply_area_num
+        elif is_valid_exclusive_area:
+            exclusive_area_num = float(area_text.replace(",", ""))
+            is_valid_exclusive = exclusive_area_num > 0
+            if is_valid_exclusive:
+                supply_area_estimate = exclusive_area_num * 1.4
+                area_for_calc = supply_area_estimate
+
+        if area_for_calc is not None:
+            pyeong_num = area_for_calc / 3.3
+            pyeong_price = deal_amount_num / pyeong_num
+            price_per_pyeong = f"{pyeong_price:.1f}"
+    except (ValueError, ZeroDivisionError):
+        pass
+
+    return price_per_pyeong
 
 
 def parse_xml_response(
@@ -541,11 +613,15 @@ def parse_xml_response(
             year_text = extract_xml_text(deal_year, "N/A")
             month_text = extract_xml_text(deal_month, "N/A")
             day_text = extract_xml_text(deal_day, "N/A")
-            deal_date = f"{year_text}-{month_text}-{day_text}"
+            deal_date = format_date_string(year_text, month_text, day_text)
 
             # 전용면적
             area = item.find("excluUseAr")
             area_text = extract_xml_text(area, "N/A")
+
+            # 공급면적 (평당 가격 계산용)
+            supply_area = item.find("splyArea")
+            supply_area_text = extract_xml_text(supply_area, "N/A")
 
             # 층
             floor = item.find("flr")
@@ -559,22 +635,10 @@ def parse_xml_response(
             road_name = item.find("roadName")
             road_name_text = extract_xml_text(road_name, "N/A")
 
-            # 평당 가격 계산
-            price_per_pyeong = "N/A"
-            is_valid_amount = deal_amount_text != "N/A"
-            is_valid_area = area_text != "N/A"
-
-            if is_valid_amount and is_valid_area:
-                try:
-                    deal_amount_num = float(deal_amount_text.replace(",", ""))
-                    area_num = float(area_text.replace(",", ""))
-                    is_valid_area_size = area_num > 0
-
-                    if is_valid_area_size:
-                        pyeong_price = deal_amount_num / (area_num / 3.3)
-                        price_per_pyeong = f"{pyeong_price:.1f}"
-                except (ValueError, ZeroDivisionError):
-                    pass
+            # 평당 가격 계산 (공급면적 기준)
+            price_per_pyeong = calculate_price_per_pyeong(
+                deal_amount_text, supply_area_text, area_text
+            )
 
             results.append(
                 {
@@ -598,6 +662,85 @@ def parse_xml_response(
         return [{"error": f"처리 오류: {str(e)}"}]
 
 
+def fetch_transaction_data(url, api_key, lawd_cd, month_str, apartment_name):
+    """특정 월의 거래 데이터를 조회하고 파싱"""
+    params = {
+        "serviceKey": api_key,
+        "LAWD_CD": lawd_cd,
+        "DEAL_YMD": month_str,
+        "numOfRows": "100",
+        "pageNo": "1",
+    }
+
+    response = requests.get(url, params=params, timeout=10)
+    is_success = response.status_code == 200
+
+    if not is_success:
+        return None
+
+    response_text = response.text
+    parsed_data = parse_xml_response(response_text, apartment_name)
+
+    has_data = parsed_data and len(parsed_data) > 0
+    has_error = has_data and "error" in parsed_data[0]
+
+    if has_data and not has_error:
+        sorted_data = sorted(
+            parsed_data, key=lambda x: x.get("거래일자", ""), reverse=True
+        )
+        return sorted_data[0]
+
+    return None
+
+
+def search_latest_transaction(url, api_key, lawd_cd, apartment_name, deal_ymd):
+    """가장 최신 거래 데이터를 찾기"""
+    latest_transaction = None
+
+    # deal_ymd 파라미터가 있으면 해당 월만 조회
+    has_deal_ymd = deal_ymd is not None
+    if has_deal_ymd:
+        latest_transaction = fetch_transaction_data(
+            url, api_key, lawd_cd, deal_ymd, apartment_name
+        )
+
+    # deal_ymd가 없으면 최근 5년까지 역순으로 조회
+    if latest_transaction is None:
+        from datetime import datetime
+
+        now = datetime.now()
+        current_year = now.year
+        current_month = now.month
+
+        # 최근 60개월 (5년) 조회
+        for i in range(60):
+            year = current_year
+            month = current_month - i
+
+            # 월이 0 이하가 되면 이전 해로 이동
+            while month <= 0:
+                month = month + 12
+                year = year - 1
+
+            month_str = f"{year}{month:02d}"
+
+            latest_transaction = fetch_transaction_data(
+                url, api_key, lawd_cd, month_str, apartment_name
+            )
+
+            if latest_transaction is not None:
+                print(f"[DEBUG] {month_str}월에서 거래 발견, 최신 거래 선택")
+                has_apartment_name = apartment_name is not None
+                if has_apartment_name:
+                    print(
+                        f"[DEBUG] 매칭된 아파트: {latest_transaction.get('아파트명', 'N/A')}"
+                    )
+                break
+
+    return latest_transaction
+
+
+@tool
 def get_real_estate_price(
     address_or_apartment: str,
     api_key: Optional[str] = None,
@@ -673,91 +816,11 @@ def get_real_estate_price(
             if has_extracted_name:
                 print(f"[DEBUG] 주소에서 추출한 아파트명: {apartment_name}")
 
-    # 가장 최신 거래 찾기 (최근 5년까지 조회)
+    # 가장 최신 거래 찾기
     try:
-        from datetime import datetime, timedelta
-
-        now = datetime.now()
-        latest_transaction = None
-
-        # 최근 5년까지 역순으로 조회하여 가장 최신 거래 찾기
-        for i in range(60):
-            month_date = now - timedelta(days=30 * i)
-            month_str = month_date.strftime("%Y%m")
-
-            params = {
-                "serviceKey": api_key,
-                "LAWD_CD": lawd_cd,
-                "DEAL_YMD": month_str,
-                "numOfRows": "100",
-                "pageNo": "1",
-            }
-
-            response = requests.get(url, params=params, timeout=10)
-
-            is_success = response.status_code == 200
-            if not is_success:
-                is_first_call = i == 0
-                if is_first_call:
-                    print(
-                        f"[DEBUG] HTTP 오류: {response.status_code}, 응답: {response.text[:200]}"
-                    )
-                continue
-
-            response_text = response.text
-
-            # 첫 번째 호출 시 응답 확인
-            is_first_call = i == 0
-            if is_first_call:
-                print(f"[DEBUG] API 응답 샘플 (처음 500자): {response_text[:500]}")
-                try:
-                    root = ET.fromstring(response_text)
-                    result_code = root.find(".//resultCode")
-                    result_msg = root.find(".//resultMsg")
-                    has_result_code = result_code is not None
-                    if has_result_code:
-                        print(f"[DEBUG] resultCode: {result_code.text}")
-                    has_result_msg = result_msg is not None
-                    if has_result_msg:
-                        print(f"[DEBUG] resultMsg: {result_msg.text}")
-                except:
-                    pass
-
-            # XML 파싱
-            parsed_data = parse_xml_response(response_text, apartment_name)
-
-            # 에러 확인
-            has_data = parsed_data and len(parsed_data) > 0
-            has_error = has_data and "error" in parsed_data[0]
-
-            if has_error:
-                if is_first_call:
-                    print(f"[DEBUG] 파싱 오류: {parsed_data[0].get('error')}")
-                continue
-
-            # 데이터가 있는 경우
-            if has_data:
-                # 거래일자로 정렬하여 가장 최신 것 선택
-                sorted_data = sorted(
-                    parsed_data, key=lambda x: x.get("거래일자", ""), reverse=True
-                )
-                latest_transaction = sorted_data[0]
-                print(
-                    f"[DEBUG] {month_str}월에서 {len(parsed_data)}건의 거래 발견, 최신 거래 선택"
-                )
-
-                has_apartment_name = apartment_name is not None
-                if has_apartment_name:
-                    print(
-                        f"[DEBUG] 매칭된 아파트: {latest_transaction.get('아파트명', 'N/A')}"
-                    )
-                break  # 최신 거래를 찾았으므로 중단
-
-            elif is_first_call and apartment_name:
-                print(
-                    f"[DEBUG] {month_str}월에서 아파트명 '{apartment_name}'에 대한 거래 데이터 없음"
-                )
-
+        latest_transaction = search_latest_transaction(
+            url, api_key, lawd_cd, apartment_name, deal_ymd
+        )
     except Exception as e:
         return json.dumps(
             {"status": "error", "error": str(e)}, ensure_ascii=False, indent=2
@@ -792,10 +855,11 @@ if __name__ == "__main__":
     print(result_json)
 
 
-# from src.tools.real_time_sale_search_api_tool import get_real_estate_price
-# import json
+# from tools.real_time_sale_search_api_tool import get_real_estate_price
 
-# # 주소만 입력하면 됩니다
-# result_json = get_real_estate_price("서울시 강남구")
-# result = json.loads(result_json)
+# # 에이전트에 tool 추가
+# tools = [get_real_estate_price]
 
+# # 또는 직접 호출
+# result = get_real_estate_price("서울시 강남구 도곡동 527 도곡렉슬")
+# print(result)
