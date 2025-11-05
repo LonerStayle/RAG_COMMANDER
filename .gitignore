@@ -12,3 +12,5 @@ wheels/
 pgdata/
 credentials.json
 token.json
+
+src/agents/renderer/temp

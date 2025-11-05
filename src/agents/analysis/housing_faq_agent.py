@@ -7,6 +7,7 @@ start_input_key = HousingFaqState.KEY.start_input
 output_key = HousingFaqState.KEY.housing_faq_output
 target_area_key = StartInput.KEY.target_area
 main_type_key = StartInput.KEY.main_type
+total_units_key = StartInput.KEY.total_units
 housing_faq_context_key = HousingFaqState.KEY.housing_faq_context
 housing_rule_context_key = HousingFaqState.KEY.housing_rule_context
 messages_key = HousingFaqState.KEY.messages
@@ -21,9 +22,10 @@ def get_rule_data(state: HousingFaqState) -> HousingFaqState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
     main_type = start_input[main_type_key]
+    total_units = start_input[total_units_key]
 
     retriever = housing_rule_retrieve()
-    query = f"사업지:{target_area}\n세대수 및 타입:{main_type} 위와 조금이라도 관련된 주택 공급 내용"
+    query = f"사업지:{target_area}\n타입:{main_type}\n세대수:{total_units}\n 위 내용과 조금이라도 관련된 주택 공급 내용"
     return {housing_rule_context_key: retriever.invoke(query)}
 
 
@@ -31,9 +33,10 @@ def get_faq_data(state: HousingFaqState) -> HousingFaqState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
     main_type = start_input[main_type_key]
+    total_units = start_input[total_units_key]
 
     retriever = housing_faq_retrieve()
-    query = f"사업지:{target_area}\n세대수 및 타입:{main_type} 위와 조금이라도 관련된 청약 질의 내용 모두"
+    query = f"사업지:{target_area}\n타입:{main_type}\n세대수:{total_units}\n 위 내용과 조금이라도 관련된 청약 질의 내용 모두"
 
     return {housing_faq_context_key: retriever.invoke(query)}
 

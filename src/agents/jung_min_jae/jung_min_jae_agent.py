@@ -59,6 +59,7 @@ unsold_insight_output_key = "unsold_insight"
 
 target_area_key = StartInput.KEY.target_area
 main_type_key = StartInput.KEY.main_type
+total_units_key = StartInput.KEY.total_units
 
 llm = LLMProfile.report_llm()
 reflect_llm = LLMProfile.dev_llm().bind_tools([think_tool])
@@ -99,6 +100,7 @@ def reporting(state: JungMinJaeState) -> JungMinJaeState:
 
     target_area = start_input.get(target_area_key, "")
     main_type = start_input.get(main_type_key, "")
+    total_units = start_input.get(total_units_key, "")
 
     location_insight = analysis_outputs.get(location_insight_output_key, {})["result"]
     policy = analysis_outputs.get(policy_output_key, {})["result"]
@@ -118,6 +120,7 @@ def reporting(state: JungMinJaeState) -> JungMinJaeState:
     human_prompt = PromptManager(PromptType.JUNG_MIN_JAE_HUMAN).get_prompt(
         target_area=target_area,
         main_type=main_type,
+        total_units=total_units,
         housing_faq=housing_faq,
         location_insight=location_insight,
         policy=policy,
