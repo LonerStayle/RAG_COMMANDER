@@ -31,7 +31,8 @@ HOUSING_FAQ_HUMAN:
   prompt: |
     [고객의 요구]
     대상지 : {target_area}
-    단지의 대표 타입 혹은 타입별 세대수 : {main_type}
+    단지의 대표 타입 혹은 타입별 수 : {main_type}
+    세대수 : {total_units}
 
     [고객의 요구와 관련된 주택 청약 FAQ 내용]
     {hosuing_faq_context}

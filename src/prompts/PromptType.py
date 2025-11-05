@@ -154,3 +154,22 @@ class PromptType(Enum):
         "정민재 이사의 보고서 페이지 별 내용 03",
     )
     
+    #---8. 렌더링 ---
+    RENDERER_SYSTEM = (
+        "RENDERER_SYSTEM",
+        str(Path(get_project_root()) / "src" / "prompts" / "renderer.yaml"),
+        "시각화 에이전트의 시스템 메시지",
+    )
+
+    RENDERER_HUMAN = (
+        "RENDERER_HUMAN",
+        str(Path(get_project_root()) / "src" / "prompts" / "renderer.yaml"),
+        "시각화 에이전트의 질문 메시지",
+    )
+    
+    RENDERER_SUMMARY_TITLE = (
+        "RENDERER_SUMMARY_TITLE",
+        str(Path(get_project_root()) / "src" / "prompts" / "renderer.yaml"),
+        "PPT 의 표지 소제목 생성 메시지",
+    )
+    

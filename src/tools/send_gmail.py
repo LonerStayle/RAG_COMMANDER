@@ -34,17 +34,33 @@ from googleapiclient.discovery import build
 from email.mime.text import MIMEText
 import base64
 import markdown
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 
-def send_markdown_as_html(md_content: str, to: str, title: str):
+def send_gmail(md_content: str, to: str, title: str, attachment_path: str = None):
     """Markdown 문자열을 HTML로 렌더링해서 Gmail 본문으로 전송"""
     html_content = markdown.markdown(md_content, extensions=["extra", "tables", "fenced_code"])
 
     creds = gmail_authenticate()
     service = build("gmail", "v1", credentials=creds)
 
-    message = MIMEText(html_content, "html", "utf-8")
+    message = MIMEMultipart()
+
     message["to"] = to
     message["subject"] = title
+    message.attach(MIMEText(html_content, "html", "utf-8"))
+    if attachment_path and os.path.exists(attachment_path):
+        with open(attachment_path, "rb") as f:
+                mime_part = MIMEBase("application", "octet-stream")
+                mime_part.set_payload(f.read())
+
+        encoders.encode_base64(mime_part)
+        filename = os.path.basename(attachment_path)
+        mime_part.add_header("Content-Disposition", f'attachment; filename="{filename}"')
+        message.attach(mime_part)
+        print(f"📎 첨부파일 추가 완료: {filename}")
 
     raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
     body = {"raw": raw}

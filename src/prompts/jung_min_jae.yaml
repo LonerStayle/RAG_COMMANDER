@@ -82,7 +82,8 @@ JUNG_MIN_JAE_HUMAN:
   prompt: |
     [고객의 요구]
     - 사업지: {target_area}
-    - 단지의 대표 타입 혹은 타입별 세대수: {main_type}
+    - 단지의 대표 타입 혹은 타입별 수: {main_type}
+    - 세대수: {total_units}
     
 
     <1. 주택 청약 FAQ 보고서 내용>

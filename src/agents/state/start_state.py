@@ -26,7 +26,7 @@ class StartConfirmation(BaseModel):
 @attach_auto_keys
 class StartInput(BaseModel):
     target_area: str = Field(
-        description="조사하려는 주소입니다. 예시: 인천광역시 부평구 부개동 13-5번지 일원",
+        description="조사하려는 주소입니다. 예시: 인천광역시 부평구 부개동, 서울특별시 강서구 신길동",
     )
 
     main_type: Optional[str] = Field(
@@ -34,6 +34,9 @@ class StartInput(BaseModel):
     )
 
     total_units: Optional[str] = Field(description="단지의 전체 세대수입니다. 예시: 1000세대 or 1000")
+    
+    email:Optional[str] = Field(description="최종 보고서 PPT 파일을 보낼 이메일 주소입니다.")
+    
     brand: Optional[str] = Field(description="브랜드 / 시공사 입니다.")
 
     orientation: Optional[str] = Field(description="향 / 배치 형태 입니다.")

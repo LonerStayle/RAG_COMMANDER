@@ -12,38 +12,39 @@ from langgraph.graph import StateGraph, START, END
 from prompts import PromptManager, PromptType
 from agents.analysis.analysis_graph import analysis_graph
 from agents.jung_min_jae.jung_min_jae_agent import report_graph
+from agents.renderer.renderer_agent import renderer_graph
 from copy import deepcopy
-# from tools.send_gmail import gmail_authenticate, send_markdown_as_html
+
+# def start_confirmation(
+#     state: MainState,
+# ) -> Command[Literal["start", "__end__"]]:
+#     # gmail_authenticate()
+#     parser_llm = start_llm.with_structured_output(StartConfirmation)
+
+#     messages_str = get_buffer_string(messages=state[messages_key])
+
+#     prompt = PromptManager(PromptType.MAIN_START_CONFIRMATION).get_prompt(
+#         messages=messages_str
+#     )
+#     response: StartConfirmation = parser_llm.invoke([HumanMessage(content=prompt)])
+
+#     if response.confirm == False:
+#         return Command(
+#             goto=END, update={messages_key: [AIMessage(content=response.question)]}
+#         )
+#     else:
+#         return Command(
+#             goto="start",
+#             update={messages_key: [AIMessage(content=response.verification)]},
+#         )
+
 
 start_llm = LLMProfile.chat_bot_llm()
 messages_key = MainState.KEY.messages
 start_input_key = MainState.KEY.start_input
 analysis_outputs_key = MainState.KEY.analysis_outputs
+final_report_key = MainState.KEY.final_report
 status_key = MainState.KEY.status
-
-
-def start_confirmation(
-    state: MainState,
-) -> Command[Literal["start", "__end__"]]:
-    # gmail_authenticate()
-    parser_llm = start_llm.with_structured_output(StartConfirmation)
-
-    messages_str = get_buffer_string(messages=state[messages_key])
-
-    prompt = PromptManager(PromptType.MAIN_START_CONFIRMATION).get_prompt(
-        messages=messages_str
-    )
-    response: StartConfirmation = parser_llm.invoke([HumanMessage(content=prompt)])
-
-    if response.confirm == False:
-        return Command(
-            goto=END, update={messages_key: [AIMessage(content=response.question)]}
-        )
-    else:
-        return Command(
-            goto="start",
-            update={messages_key: [AIMessage(content=response.verification)]},
-        )
 
 
 def start(state: MainState) -> MainState:
@@ -52,6 +53,7 @@ def start(state: MainState) -> MainState:
         messages=get_buffer_string(state[messages_key]), date=get_today_str()
     )
     response: StartInput = parser_model.invoke([HumanMessage(content=prompt)])
+    print("start_input", response)
     return {start_input_key: response.model_dump(), status_key: "ANALYSIS"}
 
 
@@ -75,37 +77,36 @@ def jung_min_jae_graph(state: MainState) -> MainState:
             "segment": 1,
         }
     )
-
-    # 11월 3일 시연용
-    # target_area_key = StartInput.KEY.target_area
-    # main_type_key = StartInput.KEY.main_type
-    # target_area = start_input[target_area_key]
-    # main_type = start_input[main_type_key]
-    # gmail_title = f"사업지: {target_area}, 규모 및 세대수:{main_type}"
-    # send_markdown_as_html(
-    #     md_content=result["final_report"],
-    #     to="immortal0900@gmail.com",
-    #     title=gmail_title,
-    # )
     return {"final_report": result["final_report"], status_key: "RENDERING"}
 
-def renderer_agent_graph():
-    return {} 
-
+def rendering(state: MainState) -> MainState:
+    start_input = state[start_input_key]
+    renderer_graph.invoke(
+        {
+            "start_input": deepcopy(start_input),
+            "analysis_outputs": deepcopy(state[analysis_outputs_key]),
+            'final_report': deepcopy(state[final_report_key])
+        }
+    )
+    return {status_key: "DONE"} 
 
 graph_builder = StateGraph(MainState)
 
-start_confirmation_key = "start_confirmation"
+# start_confirmation_key = "start_confirmation"
 start_key = "start"
 analysis_graph_key = "analysis_graph"
 jung_min_jae_key = "jung_min_jae_graph"
+renderer_key =  "renderer"
 
-graph_builder.add_node(start_confirmation_key, start_confirmation)
+# graph_builder.add_node(start_confirmation_key, start_confirmation)
 graph_builder.add_node(start_key, start)
 graph_builder.add_node(analysis_graph_key, analysis_graph_node)
 graph_builder.add_node(jung_min_jae_key, jung_min_jae_graph)
+graph_builder.add_node(renderer_key, rendering)
 
-graph_builder.add_edge(START, start_confirmation_key)
+# graph_builder.add_edge(START, start_confirmation_key)
+graph_builder.add_edge(START, start_key)
 graph_builder.add_edge(start_key, analysis_graph_key)
 graph_builder.add_edge(analysis_graph_key, jung_min_jae_key)
-graph_builder.add_edge(jung_min_jae_key, END)
+graph_builder.add_edge(jung_min_jae_key, renderer_key)
+graph_builder.add_edge(renderer_key, END)
