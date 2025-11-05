@@ -53,10 +53,10 @@ CELL_H = (GRID_H - GAP) / ROWS
 
 # 글꼴/색
 FONT_FAMILY = "Noto Sans"
-FS_TITLE = 24       # 대제목
-FS_LEAD  = 18       # 리드(골드)
-FS_LABEL = 14       # 소제목 라벨
-FS_ITEM  = 11       # 본문 항목
+FS_TITLE = 28       # 대제목
+FS_LEAD  = 22       # 리드(골드)
+FS_LABEL = 16       # 소제목 라벨
+FS_ITEM  = 12       # 본문 항목
 
 COLOR_BLACK = {"red": 0, "green": 0, "blue": 0}
 COLOR_GOLD  = {"red": 0.82, "green": 0.72, "blue": 0.47}  # #D1B875 유사
@@ -264,3 +264,83 @@ def render_sliceplan(slice_plan: Dict[str, Any]) -> Dict[str, Any]:
     # 생성된 프레젠테이션 URL 반환
     url = f"https://docs.google.com/presentation/d/{pres_id}/edit"
     return {"presentationId": pres_id, "url": url}
+
+
+
+from pptx import Presentation
+from pptx.util import Inches, Pt
+from pptx.dml.color import RGBColor
+import os
+from utils.util import get_project_root
+def render_sliceplan_local(slice_plan: dict, output_path=str(get_project_root()/"src"/"agents"/"renderer"/"output.pptx")):
+    prs = Presentation()
+    blank_slide_layout = prs.slide_layouts[6]  # 빈 슬라이드
+
+    # 기본 스타일
+    FONT = "Noto Sans CJK KR"
+    COLOR_BLACK = RGBColor(0, 0, 0)
+    COLOR_GOLD = RGBColor(209, 184, 117)
+
+    for slide_data in slice_plan.get("slides", []):
+        if slide_data.get("type") != "text":
+            continue
+
+        slide = prs.slides.add_slide(blank_slide_layout)
+        shapes = slide.shapes
+
+        # --- Title ---
+        title = slide_data.get("title", "")
+        if title:
+            tx_box = shapes.add_textbox(Inches(0.5), Inches(0.4), Inches(9), Inches(1))
+            p = tx_box.text_frame.add_paragraph()
+            p.text = title
+            p.font.bold = True
+            p.font.size = Pt(24)
+            p.font.name = FONT
+            p.font.color.rgb = COLOR_BLACK
+
+        # --- Lead (Gold) ---
+        lead = slide_data.get("lead", "")
+        if lead:
+            tx_box = shapes.add_textbox(Inches(0.5), Inches(1.3), Inches(9), Inches(1))
+            p = tx_box.text_frame.add_paragraph()
+            p.text = lead
+            p.font.bold = True
+            p.font.size = Pt(18)
+            p.font.name = FONT
+            p.font.color.rgb = COLOR_GOLD
+
+        # --- 2x2 Grid Groups ---
+        groups = slide_data.get("groups", [])
+        col_w, row_h = 4.5, 2.3
+        margin_x, margin_y = 0.5, 2.3
+        for i, group in enumerate(groups[:4]):
+            col, row = i % 2, i // 2
+            x = margin_x + col * col_w
+            y = margin_y + row * row_h
+
+            # label
+            label = group.get("label", "")
+            if label:
+                box = shapes.add_textbox(Inches(x), Inches(y), Inches(col_w - 0.3), Inches(0.4))
+                p = box.text_frame.add_paragraph()
+                p.text = label
+                p.font.bold = True
+                p.font.size = Pt(14)
+                p.font.name = FONT
+                p.font.color.rgb = COLOR_BLACK
+
+            # items
+            items = group.get("items", [])
+            if items:
+                box = shapes.add_textbox(Inches(x), Inches(y + 0.4), Inches(col_w - 0.3), Inches(1.8))
+                for it in items:
+                    p = box.text_frame.add_paragraph()
+                    p.text = f"• {it}"
+                    p.font.size = Pt(11)
+                    p.font.name = FONT
+                    p.font.color.rgb = COLOR_BLACK
+
+    prs.save(output_path)
+    print(f"PPTX saved: {os.path.abspath(output_path)}")
+    return os.path.abspath(output_path)
