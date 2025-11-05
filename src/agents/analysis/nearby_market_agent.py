@@ -1,16 +1,51 @@
-from langgraph.graph import StateGraph, START, END 
+from langgraph.graph import StateGraph, START, END
 from agents.state.analysis_state import NearbyMarketState
 from agents.state.start_state import StartInput
 from langchain_core.tools import tool
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from utils.util import get_today_str
 from utils.llm import LLMProfile
 from langchain_openai import ChatOpenAI
 from prompts import PromptManager, PromptType
-from langgraph.prebuilt import ToolNode    
-from langchain_core.tools import tool
+from langgraph.prebuilt import ToolNode
 import json
-from tools.real_time_sale_search_api_tool import get_real_estate_price
+
+
+def extract_json_from_text(text: str) -> str:
+    """
+    텍스트에서 JSON 부분만 추출합니다.
+    마크다운 코드 블록을 제거하고 JSON만 반환합니다.
+    """
+    if not text:
+        return ""
+
+    text = text.strip()
+
+    if text.startswith("```json"):
+        text = text[7:]
+    elif text.startswith("```"):
+        text = text[3:]
+
+    if text.endswith("```"):
+        text = text[:-3]
+
+    text = text.strip()
+
+    start_pos = text.find("{")
+    end_pos = text.rfind("}")
+
+    # find()와 rfind()는 문자열에서 찾는 문자가 없으면 -1을 반환합니다.
+    # find(): 왼쪽부터 찾음
+    # rfind(): 오른쪽부터 찾음
+
+    if start_pos == -1 or end_pos == -1:
+        return text
+
+    if end_pos <= start_pos:
+        return text
+
+    return text[start_pos : end_pos + 1]
+
 
 @tool(parse_docstring=False)
 def think_tool(reflection: str) -> str:
@@ -23,11 +58,12 @@ def think_tool(reflection: str) -> str:
     - Node 하나의 결과를 받고 tool을 사용하기 전에 호출(필수)
     - 데이터 수집/정제 → 핵심 수치 산출 → 시계열 해석을 마친 직후 1회 호출(필수)
     - 추가 데이터로 최신 데이터로 바뀌면 갱신 시마다 1회 재호출(선택)
-    
+
 
     [강력 지시]
     - 해당 지역에 관련된 내용만 기록
     - 허상 가정,출처 수치 금지
+    - Think step by step 방식으로 생각하세요.
     - 다음 단계(보고서 에이전트)가 바로 쓸 수 있는 한 줄 핵심 메시지 포함
 
     [나쁜 예]
@@ -41,114 +77,273 @@ def think_tool(reflection: str) -> str:
     - 잘못된 내용은 없는가?
     """
     return f"Reflection recorded: {reflection}"
-        
+
+
 output_key = NearbyMarketState.KEY.nearby_market_output
 start_input_key = NearbyMarketState.KEY.start_input
 web_context_key = NearbyMarketState.KEY.web_context
 messages_key = NearbyMarketState.KEY.messages
 target_area_key = StartInput.KEY.target_area
+main_type_key = StartInput.KEY.main_type
+total_units_key = StartInput.KEY.total_units
+kakao_api_distance_context_key = NearbyMarketState.KEY.kakao_api_distance_context
+gemini_search_key = NearbyMarketState.KEY.gemini_search
+real_estate_price_context_key = NearbyMarketState.KEY.real_estate_price_context
+perplexity_search_key = NearbyMarketState.KEY.perplexity_search
 
+
+from tools.kakao_api_distance_tool import get_location_profile
+from tools.gemini_search_tool import gemini_search
+from tools.perplexity_search_tool import perplexity_search
+from tools.real_time_sale_search_api_tool import get_real_estate_price
 
 llm = LLMProfile.analysis_llm()
-tool_list = [think_tool]
+tool_list = [think_tool, perplexity_search,get_real_estate_price,get_location_profile]
 llm_with_tools = llm.bind_tools(tool_list)
 tool_node = ToolNode(tool_list)
 
 
-from perplexity import Perplexity
-search_client = Perplexity()
-
-def web_search(state: NearbyMarketState) -> NearbyMarketState:
+def gemini_search_tool(state: NearbyMarketState) -> NearbyMarketState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
-    queries=[
-        # 1) 1km 매매 실거래(유사 연식/평형; 3.3㎡ 환산 근거 포함)
-        # f"{target_area} 아파트 실거래가 단지별 전용 59 74 84 최근 6~12개월 거래월 층 가격 3.3㎡ 환산 근거 site:rt.molit.go.kr",
+    main_type = start_input[main_type_key]
+    total_units = start_input[total_units_key]
+    date = get_today_str()
 
-        # # 2) (보조) 지자체 제공 실거래 뷰어(출처가 '국토부 실거래가'임을 명시)
-        # f"{target_area} 아파트 실거래 신고가격 단지별 전용면적 최근 거래월 site:land.seoul.go.kr 국토교통부 실거래가",
+    prompt = f"""
+    <CONTEXT>
+    사업지: {target_area}
+    세대수: {total_units}세대
+    타입: {main_type}
+    일시: {date}
+    </CONTEXT>
 
-        # # 3) 지역 시세/중위 참고(보조): REB 주간·월간 동향
-        # f"{target_area} 한국부동산원 아파트 매매 전세 가격 동향 중위 가격 지수 최근 월 site:reb.or.kr",
+    <GOAL>
+    - <CONTEXT>의 주소, 규모, 타입, 일시가 유사하고, 최단거리에 있는 매매아파트 3개, 분양아파트트 3개를 찾아서 매매아파트 3개는 각각의 평당매매가격, 분양단지 3개는 각각의 평당분양가격을 출력해 주세요
+    </GOAL>
+    <RULE>
+    - 다른말은 생략하고 무조건 <OUTPUT>형식("json 형식")으로만 출력해주세요.
+    - 마크다운 코드블록은 제거하고 출력해 주세요.
+    - 정확한 정보인지 확인하고 출력해 주세요.
+    </RULE>
+    <OUTPUT>
+    {{
+      "매매아파트": [
+        {{
+          "주소와단지명": "",
+          "세대수": "",
+          "타입": "",
+          "평당매매가격": "",
+          "사업지와의의거리": "",
+          "주변호재": ""
+        }}
+      ],
+      "분양아파트": [
+        {{
+          "주소와단지명": "",
+          "세대수": "",
+          "타입": "",
+          "평당분양가격": "",
+          "사업지와의거리": "",
+          "주변호재": ""
+        }}
+      ]
+    }}
+    </OUTPUT>
+    """
+    result = gemini_search(prompt)
+    return {gemini_search_key: result}
 
-        # # 4) 2km 최근 2년 분양 단지: 분양가(3.3㎡), 평형, 브랜드, 세대수
-        # f"{target_area} 최근 2년 분양 단지 분양가 3.3㎡ 전용 59 74 84 브랜드 세대수 site:applyhome.co.kr",
 
-        # # 5) 2km 최근 2년 청약 지표: 경쟁률, 1순위 마감 여부, 산식 팝업(공식)
-        # f"{target_area} 청약 경쟁률 1순위 마감 팝업 산식 최근 2년 site:applyhome.co.kr",
+# gemini_search_tool 의 주소를 받아서 입지 정보와 거리를 조회하고 결과를 반환하는 도구
+def kakao_api_distance_tool(state: NearbyMarketState) -> NearbyMarketState:
+    gemini_result = state[gemini_search_key]
+    json_text = extract_json_from_text(gemini_result)
 
-        # # 6) 2km 최근 2년 계약조건: 중도금 무이자/계약금 비율·특약
-        # f"{target_area} 분양 공고 계약조건 중도금 무이자 계약금 비율 특약 최근 2년 site:applyhome.co.kr",
+    if not json_text:
+        return {kakao_api_distance_context_key: []}
 
-        # # 7) 원문 PDF(있으면 가점): 분양공고/분양가 책정 근거
-        # f"{target_area} filetype:pdf 분양 공고 분양가 3.3㎡ 계약조건 경쟁률 site:applyhome.co.kr OR site:molit.go.kr",
+    gemini_data = json.loads(json_text)
 
-        # # 8) 도메인-무관 보완(정확한 역/단지 식별용 키워드)
-        # f"{target_area} 역세권 단지명 전용 84㎡ 최근 실거래 분양가 비교 3.3㎡"
-    ]
-    
-    search_list = []
-    for i in range(0, len(queries), 5):
-        batch = queries[i:i+5]
-        res = search_client.search.create(query=batch)
-        search_list.append(res)
-        return {**state, web_context_key: search_list}
-    return {web_context_key : ""}
+    all_result = []
 
-def analysis_setting(state: NearbyMarketState) -> NearbyMarketState:    
+    # 매매아파트 3개 처리
+    for apt in gemini_data["매매아파트"]:
+        address = apt["주소와단지명"]
+        result = get_location_profile.invoke({"address": address})
+        result["타입"] = "매매아파트"
+        result["원본정보"] = apt
+        all_result.append(result)
+
+    # 분양아파트 3개 처리
+    for apt in gemini_data["분양아파트"]:
+        address = apt["주소와단지명"]
+        result = get_location_profile.invoke({"address": address})
+        result["타입"] = "분양아파트"
+        result["원본정보"] = apt
+        all_result.append(result)
+
+    return {kakao_api_distance_context_key: all_result}
+
+
+# gemini_search_tool 의 매매아파트 주소를 받아서 실거래가를 조회하고 결과를 반환하는 도구
+def get_real_estate_price_tool(state: NearbyMarketState) -> NearbyMarketState:
+    gemini_result = state[gemini_search_key]
+    json_text = extract_json_from_text(gemini_result)
+
+    if not json_text:
+        return {real_estate_price_context_key: []}
+
+    gemini_data = json.loads(json_text)
+
+    sale_results = []
+    # 매매아파트 3개 처리
+    for apt in gemini_data["매매아파트"]:
+        address = apt["주소와단지명"]
+        result_str = get_real_estate_price.invoke({"address_or_apartment": address})
+        result = json.loads(result_str)
+        result["타입"] = "매매아파트"
+        sale_results.append(result)
+
+    return {real_estate_price_context_key: sale_results}
+
+
+def perplexity_search_tool(state: NearbyMarketState) -> NearbyMarketState:
+    gemini_result = state[gemini_search_key]
+    json_text = extract_json_from_text(gemini_result)
+
+    if not json_text:
+        return {perplexity_search_key: ""}
+
+    gemini_data = json.loads(json_text)
+
+    query_parts = []
+
+    for apt in gemini_data["분양아파트"]:
+        address = apt["주소와단지명"]
+        current_price = apt["평당분양가격"]
+        query_parts.append(f"{address}의 평당분양가격: {current_price}")
+
+    combined_query = f"""
+    <CONTEXT>
+    1. {query_parts[0]}
+    2. {query_parts[1]}
+    3. {query_parts[2]}
+    </CONTEXT>
+    <GOAL>
+    - <CONTEXT>의 분양아파트 3개의 평당 분양가격을 검증하고, 각분양단지의 "계약조건"과 정확한 "분양가격"을 출력해주세요
+    </GOAL>
+    <RULE>
+    - 다른 말은 생략하고 무조건 <OUTPUT>형태의 json 형식으로 출력해 주세요
+    </RULE>
+    <OUTPUT>
+    {{
+        "분양아파트": [
+            {{
+                "주소와단지명": "",
+                "평당분양가격": "",
+                "계약조건": "",
+                "비고": ""
+            }}
+        ]
+    }}
+    </OUTPUT>
+    """
+    result = perplexity_search.invoke({"query": combined_query})
+    return {perplexity_search_key: result}
+
+
+def analysis_setting(state: NearbyMarketState) -> NearbyMarketState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
-    web_context = state[web_context_key]
+    total_units = start_input[total_units_key]
+    main_type = start_input[main_type_key]
+    gemini_search = state.get(gemini_search_key, "")
+    kakao_api_distance_context = state.get(kakao_api_distance_context_key, "")
+    real_estate_price_context = state.get(real_estate_price_context_key, "")
+    perplexity_search = state.get(perplexity_search_key, "")
 
     system_prompt = PromptManager(PromptType.NEARBY_MARKET_SYSTEM).get_prompt(
-        date=get_today_str()
+        target_area=target_area,
+        total_units=total_units,
+        main_type=main_type,
+        date=get_today_str(),
+        gemini_search=gemini_search,
+        kakao_api_distance_context=kakao_api_distance_context,
+        real_estate_price_context=real_estate_price_context,
+        perplexity_search=perplexity_search,
     )
-    humun_prompt = PromptManager(PromptType.NEARBY_MARKET_HUMAN).get_prompt(
-        target_area=target_area, 
-        web_context=web_context,
+    human_prompt = PromptManager(PromptType.NEARBY_MARKET_HUMAN).get_prompt(
+        target_area=target_area,
+        total_units=total_units,
+        main_type=main_type,
+        date=get_today_str(),
+        gemini_search=gemini_search,
+        kakao_api_distance_context=kakao_api_distance_context,
+        real_estate_price_context=real_estate_price_context,
+        perplexity_search=perplexity_search,
     )
-    
+
     messages = [
         SystemMessage(content=system_prompt),
-        HumanMessage(content=humun_prompt),
+        HumanMessage(content=human_prompt),
     ]
-    return {messages_key: messages}
+    return {**state, messages_key: messages}
 
 
-def agent(state: NearbyMarketState) -> NearbyMarketState:    
+def agent(state: NearbyMarketState) -> NearbyMarketState:
     messages = state.get(messages_key, [])
     response = llm_with_tools.invoke(messages)
     new_messages = messages + [response]
     new_state = {**state, messages_key: new_messages}
+    # new_state[output_key] = response.content
     new_state[output_key] = {
         "result": response.content,
-        web_context_key: state[web_context_key]
+        gemini_search_key: state[gemini_search_key],
+        kakao_api_distance_context_key: state[kakao_api_distance_context_key],
+        real_estate_price_context_key: state[real_estate_price_context_key],
+        perplexity_search_key: state[perplexity_search_key],
     }
     return new_state
-
 
 
 def router(state: NearbyMarketState):
     messages = state[messages_key]
     last_ai_message = messages[-1]
-    if last_ai_message.tool_calls:        
+    if last_ai_message.tool_calls:
         return "tools"
     return "__end__"
 
 
-web_search_key = "web_search"
-analysis_key = "analysis"
+web_context_key = "web_search"
+analysis_setting_key = "analysis_setting"
 tools_key = "tools"
 agent_key = "agent"
+gemini_search_key = "gemini_search"
+kakao_api_distance_key = "kakao_api_distance"
+real_estate_price_key = "real_estate_price"
+perplexity_search_key = "perplexity_search"
+
 graph_builder = StateGraph(NearbyMarketState)
-graph_builder.add_node(web_context_key, web_search)
-graph_builder.add_node(analysis_key, analysis_setting)
+
+graph_builder.add_node(gemini_search_key, gemini_search_tool)
+graph_builder.add_node(kakao_api_distance_key, kakao_api_distance_tool)
+graph_builder.add_node(real_estate_price_key, get_real_estate_price_tool)
+graph_builder.add_node(perplexity_search_key, perplexity_search_tool)
+graph_builder.add_node(analysis_setting_key, analysis_setting)
+
 graph_builder.add_node(tools_key, tool_node)
 graph_builder.add_node(agent_key, agent)
 
-graph_builder.add_edge(START, web_context_key)
-graph_builder.add_edge(web_context_key, analysis_key)
-graph_builder.add_edge(analysis_key, agent_key)
+graph_builder.add_edge(START, gemini_search_key)
+graph_builder.add_edge(gemini_search_key, kakao_api_distance_key)
+graph_builder.add_edge(gemini_search_key, real_estate_price_key)
+graph_builder.add_edge(gemini_search_key, perplexity_search_key)
+
+graph_builder.add_edge(kakao_api_distance_key, analysis_setting_key)
+graph_builder.add_edge(real_estate_price_key, analysis_setting_key)
+graph_builder.add_edge(perplexity_search_key, analysis_setting_key)
+graph_builder.add_edge(analysis_setting_key, agent_key)
 
 graph_builder.add_conditional_edges(agent_key, router, [tools_key, END])
 graph_builder.add_edge(tools_key, agent_key)
