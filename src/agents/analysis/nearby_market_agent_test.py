@@ -146,7 +146,7 @@ def kakao_api_distance_tool(state: NearbyMarketState) -> NearbyMarketState:
 # gemini_search_tool 의 매매아파트 주소를 받아서 실거래가를 조회하고 결과를 반환하는 도구
 def get_real_estate_price_tool(state: NearbyMarketState) -> NearbyMarketState:
     gemini_result = state[gemini_search_key]
-    gemini_data = json.loades(gemini_result)
+    gemini_data = json.loads(gemini_result)
 
     sale_results = []
     # 매매아파트 3개 처리
@@ -202,9 +202,9 @@ def analysis_setting(state: NearbyMarketState) -> NearbyMarketState:
     total_units = start_input[total_units_key]
     main_type = start_input[main_type_key]
     gemini_search= state.get(gemini_search_key, "")
-    kakao_api_distance_context_key = state.get(kakao_api_distance_context_key, "")
-    real_estate_price_context_key = state.get(real_estate_price_context_key, "")
-    perplexity_search_key = state.get(perplexity_search_key, "")
+    kakao_api_distance_context = state.get(kakao_api_distance_context_key, "")
+    real_estate_price_context = state.get(real_estate_price_context_key, "")
+    perplexity_search = state.get(perplexity_search_key, "")
 
     system_prompt = PromptManager(PromptType.NEARBY_MARKET_SYSTEM).get_prompt()
     human_prompt = PromptManager(PromptType.NEARBY_MARKET_HUMAN).get_prompt(
@@ -213,9 +213,9 @@ def analysis_setting(state: NearbyMarketState) -> NearbyMarketState:
         main_type=main_type,
         date=get_today_str(),
         gemini_search=gemini_search,
-        kakao_api_distance_context=kakao_api_distance_context_key,
-        real_estate_price_context=real_estate_price_context_key,
-        perplexity_search= perplexity_search_key
+        kakao_api_distance_context=kakao_api_distance_context,
+        real_estate_price_context=real_estate_price_context,
+        perplexity_search= perplexity_search
     )
     
     messages = [
@@ -259,3 +259,27 @@ real_estate_price_key = "real_estate_price"
 perplexity_search_key = "perplexity_search"
 
 graph_builder = StateGraph(NearbyMarketState)
+
+graph_builder.add_node(gemini_search_key, gemini_search_tool)
+graph_builder.add_node(kakao_api_distance_key, kakao_api_distance_tool)
+graph_builder.add_node(real_estate_price_key, get_real_estate_price_tool)
+graph_builder.add_node(perplexity_search_key, perplexity_search_tool)
+graph_builder.add_node(analysis_setting_key, analysis_setting)
+
+graph_builder.add_node(tools_key, tool_node)
+graph_builder.add_node(agent_key, agent)
+
+graph_builder.add_edge(START, gemini_search_key)
+graph_builder.add_edge(gemini_search_key, kakao_api_distance_key)
+graph_builder.add_edge(gemini_search_key, real_estate_price_key)
+graph_builder.add_edge(gemini_search_key, perplexity_search_key)
+
+graph_builder.add_edge(kakao_api_distance_key, analysis_setting_key)
+graph_builder.add_edge(real_estate_price_key, analysis_setting_key)
+graph_builder.add_edge(perplexity_search_key, analysis_setting_key)
+graph_builder.add_edge(analysis_setting_key, agent_key)
+
+graph_builder.add_conditional_edges(agent_key, router, [tools_key, END])
+graph_builder.add_edge(tools_key, agent_key)
+
+nearby_market_graph = graph_builder.compile()
