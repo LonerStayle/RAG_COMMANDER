@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import uuid
+from pathlib import Path
 from typing import Dict, Any, List
 
 from google.oauth2.credentials import Credentials
@@ -271,6 +272,10 @@ def render_sliceplan_local(slice_plan: dict, output_path:str | None = None):
             / "src" / "agents" / "renderer"
             / "temp" /f"{uuid.uuid4().hex}.pptx"
         )
+
+    # 디렉토리가 없으면 생성
+    output_dir = Path(output_path).parent
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     prs = Presentation()
     blank = prs.slide_layouts[6]
