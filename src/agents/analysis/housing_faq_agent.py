@@ -26,7 +26,10 @@ def get_rule_data(state: HousingFaqState) -> HousingFaqState:
 
     retriever = housing_rule_retrieve()
     query = f"사업지:{target_area}\n타입:{main_type}\n세대수:{total_units}\n 위 내용과 조금이라도 관련된 주택 공급 내용"
-    return {housing_rule_context_key: retriever.invoke(query)}
+    docs = []
+    for doc in retriever.invoke(query):
+        docs.append(doc.page_content)
+    return {housing_rule_context_key: docs}
 
 
 def get_faq_data(state: HousingFaqState) -> HousingFaqState:
@@ -37,8 +40,10 @@ def get_faq_data(state: HousingFaqState) -> HousingFaqState:
 
     retriever = housing_faq_retrieve()
     query = f"사업지:{target_area}\n타입:{main_type}\n세대수:{total_units}\n 위 내용과 조금이라도 관련된 청약 질의 내용 모두"
-
-    return {housing_faq_context_key: retriever.invoke(query)}
+    docs = []
+    for doc in retriever.invoke(query):
+        docs.append(doc.page_content)
+    return {housing_faq_context_key: docs}
 
 
 from prompts import PromptManager, PromptType
