@@ -113,7 +113,7 @@ def render_text_slide(slide, data):
         
         # 첫 번째 줄(row == 0)만 위로 0.4인치 당겨서 리드와 간격 좁히기
         if row == 0:
-            y = margin_y - 0.62
+            y = margin_y - 0.55
         else:
             y = (margin_y - 0.2) + row * row_h
 
