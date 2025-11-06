@@ -100,7 +100,7 @@ NEARBY_MARKET_HUMAN:
     - 매매아파트/분양아파트 정보: {gemini_search}
     - 매매아파트/분양아파트 입지정보: {kakao_api_distance_context}
     - 매매아파트 실거래가: {real_estate_price_context}
-    - 분양아파트 평당분양가격, 계약조건, 청약경쟁률: {perplexity_search}
+    - 분양아파트 평당분양가격, 계약조건, 청약경쟁률, 청약일시: {perplexity_search}
     </INPUT>
     
     [GOAL]
@@ -140,7 +140,8 @@ NEARBY_MARKET_HUMAN:
           "전체세대수": "",
           "타입": "",
           "평당분양가격": "",
-          "청약률": "",
+          "청약경쟁률": "",
+          "청약일시": "",
           "사업지와의 거리": "",
           "계약조건": "",
           "입지정보": "",

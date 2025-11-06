@@ -146,7 +146,9 @@ def gemini_search_tool(state: NearbyMarketState) -> NearbyMarketState:
           "세대수": "",
           "타입": "",
           "평당분양가격": "",
-          "청약경쟁쟁률": "",
+          "청약경쟁률": "",
+          "청약일시": "",
+          "계약조건": "",
           "사업지와의거리": "",
           "주변호재": ""
         }}
@@ -166,7 +168,13 @@ def kakao_api_distance_tool(state: NearbyMarketState) -> NearbyMarketState:
     if not json_text:
         return {kakao_api_distance_context_key: []}
 
-    gemini_data = json.loads(json_text)
+    try:
+        gemini_data = json.loads(json_text)
+    except json.JSONDecodeError as e:
+        print(f"[ERROR] JSON 파싱 실패: {e}")
+        print(f"[DEBUG] 원본 Gemini 응답:\n{gemini_result}")
+        print(f"[DEBUG] 추출된 JSON 텍스트:\n{json_text}")
+        return {kakao_api_distance_context_key: []}
 
     all_result = []
 
@@ -197,7 +205,13 @@ def get_real_estate_price_tool(state: NearbyMarketState) -> NearbyMarketState:
     if not json_text:
         return {real_estate_price_context_key: []}
 
-    gemini_data = json.loads(json_text)
+    try:
+        gemini_data = json.loads(json_text)
+    except json.JSONDecodeError as e:
+        print(f"[ERROR] JSON 파싱 실패 (get_real_estate_price_tool): {e}")
+        print(f"[DEBUG] 원본 Gemini 응답:\n{gemini_result}")
+        print(f"[DEBUG] 추출된 JSON 텍스트:\n{json_text}")
+        return {real_estate_price_context_key: []}
 
     sale_results = []
     # 매매아파트 3개 처리
@@ -218,7 +232,13 @@ def perplexity_search_tool(state: NearbyMarketState) -> NearbyMarketState:
     if not json_text:
         return {perplexity_search_key: ""}
 
-    gemini_data = json.loads(json_text)
+    try:
+        gemini_data = json.loads(json_text)
+    except json.JSONDecodeError as e:
+        print(f"[ERROR] JSON 파싱 실패 (perplexity_search_tool): {e}")
+        print(f"[DEBUG] 원본 Gemini 응답:\n{gemini_result}")
+        print(f"[DEBUG] 추출된 JSON 텍스트:\n{json_text}")
+        return {perplexity_search_key: ""}
 
     query_parts = []
 
@@ -227,7 +247,8 @@ def perplexity_search_tool(state: NearbyMarketState) -> NearbyMarketState:
         current_price = apt["평당분양가격"]
         contract_condition = apt["계약조건"]
         contract_rate = apt["청약경쟁률"]
-        query_parts.append(f"{address}의 평당분양가격: {current_price}, 계약조건: {contract_condition}, 청약경쟁률: {contract_rate}")
+        contract_date = apt["청약일시"]
+        query_parts.append(f"{address}의 평당분양가격: {current_price}, 계약조건: {contract_condition}, 청약경쟁률: {contract_rate}, 청약일시: {contract_date}")
 
     combined_query = f"""
     <CONTEXT>
@@ -236,7 +257,7 @@ def perplexity_search_tool(state: NearbyMarketState) -> NearbyMarketState:
     3. {query_parts[2]}
     </CONTEXT>
     <GOAL>
-    - <CONTEXT>의 분양아파트 3개의 "평당 분양가격", "계약조건"과 "청약경쟁률"을 검증하고 정확하게게 출력해주세요
+    - <CONTEXT>의 분양아파트 3개의 "평당 분양가격", "계약조건", "청약경쟁률", "청약일시"을 검증하고 정확하게게 출력해주세요
     </GOAL>
     <RULE>
     - 다른 말은 생략하고 무조건 <OUTPUT>형태의 json 형식으로 출력해 주세요
