@@ -100,7 +100,7 @@ def gemini_search_tool(state: LocationInsightState) -> LocationInsightState:
 def kakao_api_distance_tool(state: LocationInsightState) -> LocationInsightState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
-    result = get_location_profile(target_area)
+    result = get_location_profile.invoke({"address": target_area})
     return {kakao_api_distance_context_key: result}
 
 
