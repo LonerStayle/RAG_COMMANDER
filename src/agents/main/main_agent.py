@@ -69,10 +69,10 @@ async def analysis_graph_node(state: MainState) -> MainState:
 
 
 def jung_min_jae_graph(state: MainState) -> MainState:
-    start_input = state[start_input_key]
+    
     result = report_graph.invoke(
         {
-            "start_input": deepcopy(start_input),
+            "start_input": deepcopy(state[start_input_key]),
             "analysis_outputs": deepcopy(state[analysis_outputs_key]),
             "segment": 1,
         }
@@ -80,10 +80,10 @@ def jung_min_jae_graph(state: MainState) -> MainState:
     return {"final_report": result["final_report"], status_key: "RENDERING"}
 
 def rendering(state: MainState) -> MainState:
-    start_input = state[start_input_key]
+    
     renderer_graph.invoke(
         {
-            "start_input": deepcopy(start_input),
+            "start_input": deepcopy(state[start_input_key]),
             "analysis_outputs": deepcopy(state[analysis_outputs_key]),
             'final_report': deepcopy(state[final_report_key])
         }

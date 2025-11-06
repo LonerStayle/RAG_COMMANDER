@@ -16,7 +16,8 @@ from pptx.dml.color import RGBColor
 def render_cover_slide(slide, data):
     FONT = "Noto Sans CJK KR"
     COLOR_BLACK = RGBColor(0, 0, 0)
-    COLOR_GOLD = RGBColor(209, 184, 117)
+    COLOR_BLUE = RGBColor(47, 85, 151)
+    
 
     shapes = slide.shapes
 
@@ -51,7 +52,7 @@ def render_cover_slide(slide, data):
         p.font.bold = True
         p.font.size = Pt(24)
         p.font.name = FONT
-        p.font.color.rgb = COLOR_GOLD
+        p.font.color.rgb = COLOR_BLUE
         p.alignment = PP_ALIGN.CENTER
 
     # 하단 정보
@@ -71,7 +72,7 @@ def render_cover_slide(slide, data):
 def render_text_slide(slide, data):
     FONT = "Noto Sans CJK KR"
     COLOR_BLACK = RGBColor(0, 0, 0)
-    COLOR_GOLD = RGBColor(209, 184, 117)
+    COLOR_BLUE = RGBColor(47, 85, 151)
 
     shapes = slide.shapes
 
@@ -99,7 +100,7 @@ def render_text_slide(slide, data):
         p.font.bold = True
         p.font.size = Pt(18)
         p.font.name = FONT
-        p.font.color.rgb = COLOR_GOLD
+        p.font.color.rgb = COLOR_BLUE
 
     # --- Groups ---
     groups = data.get("groups", [])
@@ -112,7 +113,7 @@ def render_text_slide(slide, data):
         
         # 첫 번째 줄(row == 0)만 위로 0.4인치 당겨서 리드와 간격 좁히기
         if row == 0:
-            y = margin_y - 0.5
+            y = margin_y - 0.62
         else:
             y = (margin_y - 0.2) + row * row_h
 
@@ -145,7 +146,7 @@ def render_text_slide(slide, data):
             p.text = insight
             p.font.size = Pt(12)
             p.font.name = FONT
-            p.font.color.rgb = COLOR_GOLD
+            p.font.color.rgb = COLOR_BLUE
 
         # Details Section
         if details:
@@ -192,6 +193,70 @@ def render_text_slide(slide, data):
                         p.font.size = Pt(10)
                         p.font.name = FONT
 
+from pptx.enum.text import MSO_ANCHOR
+from pptx.util import Inches, Pt
+from pptx.dml.color import RGBColor
+
+def render_swot_slide(slide, data):
+    FONT = "Noto Sans CJK KR"
+    COLOR_BLACK = RGBColor(0, 0, 0)
+    COLOR_WHITE = RGBColor(255, 255, 255)
+    
+
+    title = data.get("title", "SWOT 분석")
+    groups = data.get("groups", [])
+
+    # Title
+    box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(9), Inches(0.8))
+    tf = box.text_frame
+    p = tf.add_paragraph()
+    p.text = title
+    p.font.bold = True
+    p.font.size = Pt(32)
+    p.font.name = FONT
+    p.alignment = PP_ALIGN.CENTER
+
+    # Table (4 rows + header)
+    rows = len(groups) + 1
+    cols = 2
+    table_shape = slide.shapes.add_table(rows, cols, Inches(0.5), Inches(1.2), Inches(9), Inches(5)).table
+
+    # Header
+    hdr_cells = table_shape.rows[0].cells
+    hdr_cells[0].text = "구분"
+    hdr_cells[1].text = "주요 내용"
+    for cell in hdr_cells:
+        for p in cell.text_frame.paragraphs:
+            p.font.bold = True
+            p.font.size = Pt(14)
+            p.font.name = FONT
+            p.font.color.rgb = COLOR_WHITE
+        cell.vertical_anchor = MSO_ANCHOR.MIDDLE
+
+    # Rows
+    for i, group in enumerate(groups, start=1):
+        label_cell, content_cell = table_shape.rows[i].cells
+        label_cell.text = group.get("label", "")
+        content_lines = group.get("details", [])
+        content_cell.text = "\n".join([f"- {line}" for line in content_lines])
+
+        for p in label_cell.text_frame.paragraphs:
+            p.font.bold = True
+            p.font.size = Pt(13)
+            p.font.name = FONT
+            p.font.color.rgb = COLOR_BLACK
+            p.alignment = PP_ALIGN.CENTER
+
+        for p in content_cell.text_frame.paragraphs:
+            p.font.size = Pt(11)
+            p.font.name = FONT
+            p.font.color.rgb = COLOR_BLACK
+            p.alignment = PP_ALIGN.LEFT
+
+    # 테이블 스타일 간격 조정
+    table_shape.columns[0].width = Inches(2.0)
+    table_shape.columns[1].width = Inches(7.0)
+
 
 from pptx import Presentation
 from pptx.util import Inches, Pt
@@ -218,6 +283,8 @@ def render_sliceplan_local(slice_plan: dict, output_path:str | None = None):
             render_cover_slide(slide, slide_data)
         elif layout_type == 2:
             render_text_slide(slide, slide_data)
+        elif layout_type == 3:
+            render_swot_slide(slide, slide_data)
         else:
             print(f"[WARN] Unknown layout_type={layout_type}")
 
