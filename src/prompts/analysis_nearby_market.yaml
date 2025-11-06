@@ -100,7 +100,7 @@ NEARBY_MARKET_HUMAN:
     - 매매아파트/분양아파트 정보: {gemini_search}
     - 매매아파트/분양아파트 입지정보: {kakao_api_distance_context}
     - 매매아파트 실거래가: {real_estate_price_context}
-    - 분양아파트 평당분양가격: {perplexity_search}
+    - 분양아파트 평당분양가격, 계약조건, 청약경쟁률: {perplexity_search}
     </INPUT>
     
     [GOAL]
@@ -114,9 +114,9 @@ NEARBY_MARKET_HUMAN:
     - 분양아파트의 평당분양가격은 반드시 {perplexity_search}를 참고해서 출력해 주세요.
     - 만약 매매아파트와 분양아파트의 입지정보가 없으면,  {gemini_search}의 "주소와단지명"에서 주소만 추출한 뒤, tool_node에서 "get_location_profile tool을 사용"해서 출력해 주세요.
     - 만약 답변을 작성하기 전에 매매아파트와 평당매매가가격{real_estate_price_context}이나 분양아파트의 평당분양가격{perplexity_search}이 없으면, {gemini_search}의 "주소와단지명"에서 주소만 추출한 뒤, tool_node에서 perplexity_search tool을 사용해서 출력해 주세요.
-    - 최종 출력에 누락이 있으면 tool을 활용해 반드시 누락을 채우고 출력하세요.
-    - {gemini_search}의 주변호재 검색결과가 사실인지 perplexity_search tool 을 활용해서 검증하는 과정을 거쳐야 합니다. 
-    - 반드시 <OUTPUT>과 같은 json 형식으로 출력해 주세요.
+    - **최종 출력에 누락이 있으면 tool을 활용해 반드시 누락을 채우고 출력**하세요.
+    - **{gemini_search}의 검색결과가 사실인지 perplexity_search tool 을 활용해서 검증**하는 과정을 거쳐야 합니다. 
+    - **반드시 <OUTPUT>과 같은 json 형식으로 출력해 주세요.**
    
    
 
@@ -128,6 +128,7 @@ NEARBY_MARKET_HUMAN:
           "전체세대수": "",
           "타입": "",
           "평당매매가격": "",
+          "준공연도": "",
           "사업지와의 거리": "",
           "거래일자": "",
           "입지정보": "",
@@ -139,6 +140,7 @@ NEARBY_MARKET_HUMAN:
           "전체세대수": "",
           "타입": "",
           "평당분양가격": "",
+          "청약률": "",
           "사업지와의 거리": "",
           "계약조건": "",
           "입지정보": "",

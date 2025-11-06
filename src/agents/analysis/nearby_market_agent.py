@@ -123,6 +123,7 @@ def gemini_search_tool(state: NearbyMarketState) -> NearbyMarketState:
     </GOAL>
     <RULE>
     - 다른말은 생략하고 무조건 <OUTPUT>형식("json 형식")으로만 출력해주세요.
+    - 매매아파트는 준공연도를 명시하세요.
     - 마크다운 코드블록은 제거하고 출력해 주세요.
     - 정확한 정보인지 확인하고 출력해 주세요.
     </RULE>
@@ -134,6 +135,7 @@ def gemini_search_tool(state: NearbyMarketState) -> NearbyMarketState:
           "세대수": "",
           "타입": "",
           "평당매매가격": "",
+          "준공연도": "",
           "사업지와의의거리": "",
           "주변호재": ""
         }}
@@ -144,6 +146,7 @@ def gemini_search_tool(state: NearbyMarketState) -> NearbyMarketState:
           "세대수": "",
           "타입": "",
           "평당분양가격": "",
+          "청약경쟁쟁률": "",
           "사업지와의거리": "",
           "주변호재": ""
         }}
@@ -222,7 +225,9 @@ def perplexity_search_tool(state: NearbyMarketState) -> NearbyMarketState:
     for apt in gemini_data["분양아파트"]:
         address = apt["주소와단지명"]
         current_price = apt["평당분양가격"]
-        query_parts.append(f"{address}의 평당분양가격: {current_price}")
+        contract_condition = apt["계약조건"]
+        contract_rate = apt["청약경쟁률"]
+        query_parts.append(f"{address}의 평당분양가격: {current_price}, 계약조건: {contract_condition}, 청약경쟁률: {contract_rate}")
 
     combined_query = f"""
     <CONTEXT>
@@ -231,7 +236,7 @@ def perplexity_search_tool(state: NearbyMarketState) -> NearbyMarketState:
     3. {query_parts[2]}
     </CONTEXT>
     <GOAL>
-    - <CONTEXT>의 분양아파트 3개의 평당 분양가격을 검증하고, 각분양단지의 "계약조건"과 정확한 "분양가격"을 출력해주세요
+    - <CONTEXT>의 분양아파트 3개의 "평당 분양가격", "계약조건"과 "청약경쟁률"을 검증하고 정확하게게 출력해주세요
     </GOAL>
     <RULE>
     - 다른 말은 생략하고 무조건 <OUTPUT>형태의 json 형식으로 출력해 주세요
@@ -243,6 +248,7 @@ def perplexity_search_tool(state: NearbyMarketState) -> NearbyMarketState:
                 "주소와단지명": "",
                 "평당분양가격": "",
                 "계약조건": "",
+                "청약경쟁률": "",
                 "비고": ""
             }}
         ]
