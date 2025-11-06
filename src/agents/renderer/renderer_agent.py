@@ -59,7 +59,7 @@ def init(state: RendererState) -> RendererState:
     final_report = state[final_report_key]
 
     ppt_title = (
-        f"사업지: {target_area}\n 타입: {main_type}, 세대수:{total_units} 사업 보고서"
+        f"{target_area}\n {main_type}, {total_units}세대 사업 보고서"
     )
     summary_title_llm = LLMProfile.dev_llm()
     llm_result = summary_title_llm.invoke(
@@ -99,9 +99,10 @@ from tools.send_gmail import gmail_authenticate
 from tools.send_gmail import send_gmail
 
 def renderring(state: RendererState) -> RendererState:
+    
     title = state[ppt_title_key]
     final_report = state[final_report_key]
-    email = state[email_key]
+    email = state[start_input_key][email_key]
     messages = state[messages_key]
     last_message = messages[-1]
     slide_plan = JsonOutputParser().parse(last_message.content)
