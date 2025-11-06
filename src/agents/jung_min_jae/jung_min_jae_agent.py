@@ -17,7 +17,7 @@ except Exception:
 
 @tool(parse_docstring=True)
 def think_tool(reflection: str) -> str:
-    """협회 대표가 최종 보고서를 완성하기 전에 **자체 검증(자아성찰)**을 수행하는 도구입니다.
+    """부동산 대행사 핵심 분석가가 분양성 검토 보고서를 완성하기 전에 **자체 검증(자아성찰)**을 수행하는 도구입니다.
 
     Args:
         reflection (str): 방금 작성한 보고서 초안 또는 섹션 내용.
