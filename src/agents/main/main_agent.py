@@ -79,16 +79,16 @@ def jung_min_jae_graph(state: MainState) -> MainState:
     )
     return {"final_report": result["final_report"], status_key: "RENDERING"}
 
-def rendering(state: MainState) -> MainState:
+# def rendering(state: MainState) -> MainState:
     
-    renderer_graph.invoke(
-        {
-            "start_input": deepcopy(state[start_input_key]),
-            "analysis_outputs": deepcopy(state[analysis_outputs_key]),
-            'final_report': deepcopy(state[final_report_key])
-        }
-    )
-    return {status_key: "DONE"} 
+#     renderer_graph.invoke(
+#         {
+#             "start_input": deepcopy(state[start_input_key]),
+#             "analysis_outputs": deepcopy(state[analysis_outputs_key]),
+#             'final_report': deepcopy(state[final_report_key])
+#         }
+#     )
+#     return {status_key: "DONE"} 
 
 graph_builder = StateGraph(MainState)
 
@@ -102,11 +102,11 @@ renderer_key =  "renderer"
 graph_builder.add_node(start_key, start)
 graph_builder.add_node(analysis_graph_key, analysis_graph_node)
 graph_builder.add_node(jung_min_jae_key, jung_min_jae_graph)
-graph_builder.add_node(renderer_key, rendering)
+# graph_builder.add_node(renderer_key, rendering)
 
 # graph_builder.add_edge(START, start_confirmation_key)
 graph_builder.add_edge(START, start_key)
 graph_builder.add_edge(start_key, analysis_graph_key)
 graph_builder.add_edge(analysis_graph_key, jung_min_jae_key)
-graph_builder.add_edge(jung_min_jae_key, renderer_key)
-graph_builder.add_edge(renderer_key, END)
+# graph_builder.add_edge(jung_min_jae_key, renderer_key)
+graph_builder.add_edge(jung_min_jae_key, END)
