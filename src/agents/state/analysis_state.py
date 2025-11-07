@@ -37,6 +37,8 @@ class PolicyState(TypedDict):
     report_draft: str  # 보고서 초안
     completeness_check: ReportCheck  # self check 결과
     documents: list  # PDF/뉴스 등 자료
+    iteration: Optional[int]  # 반복 횟수
+    yaml_context: Optional[dict]  # YAML 프롬프트 컨텍스트
 
 
 @attach_auto_keys

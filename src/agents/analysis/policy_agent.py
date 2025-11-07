@@ -145,11 +145,14 @@ def analysis_setting(state: PolicyState) -> PolicyState:
         HumanMessage(content=human_prompt),
     ]
     record_reflection("프롬프트 준비", "시스템/휴먼 프롬프트 설정")
+    target_area_value = start_input[StartInput.KEY.target_area]
     return {
         messages_key: messages,
         "documents": state.get(pdf_context_key, []),
         "yaml_context": {
-            "summary": PromptManager(PromptType.POLICY_COMPARISON_SUMMARY).get_prompt(),
+            "summary": PromptManager(PromptType.POLICY_COMPARISON_SUMMARY).get_prompt(
+                target_area=target_area_value
+            ),
             "segment_01": PromptManager(
                 PromptType.POLICY_COMPARISON_SEGMENT_01
             ).get_prompt(),
@@ -158,7 +161,7 @@ def analysis_setting(state: PolicyState) -> PolicyState:
             ).get_prompt(),
             "segment_03": PromptManager(
                 PromptType.POLICY_COMPARISON_SEGMENT_03
-            ).get_prompt(),
+            ).get_prompt(target_area=target_area_value),
         },
         "iteration": 0,
     }
@@ -186,14 +189,14 @@ def evaluate_report_completeness(state: PolicyState) -> PolicyState:
     보고서 완성도 평가
     """
     draft = state["report_draft"]
-    yaml_context = state["yaml_context"]
+    yaml_context = state.get("yaml_context", {})
     template = (
         "=== Segment 01 Template ===\n"
-        f"{yaml_context['segment_01']}\n\n"
+        f"{yaml_context.get('segment_01', '')}\n\n"
         "=== Segment 02 Template ===\n"
-        f"{yaml_context['segment_02']}\n\n"
+        f"{yaml_context.get('segment_02', '')}\n\n"
         "=== Segment 03 Template ===\n"
-        f"{yaml_context['segment_03']}"
+        f"{yaml_context.get('segment_03', '')}"
     )
     prompt = (
         "다음 *보고서 초안*이 *템플릿*을 모두 채웠는지 살펴보고, 부족한 항목과 검색어를 알려주세요.\n\n"
@@ -215,7 +218,7 @@ def decide_next_step(state: PolicyState) -> str:
     if check.is_complete:
         return "__end__"
     if (
-        state["iteration"] >= MAX_ITERATIONS
+        state.get("iteration", 0) >= MAX_ITERATIONS
     ):  # 최대 반복 횟수에 도달하면 더 이상 재검색하지 않고 종료
         return "__end__"
     return "execute_retrieval"  # 보고서에 부족한 내용이 있으니 추가 자료를 검색하는 노드(execute_retrieval)로 이동
@@ -237,7 +240,7 @@ def execute_additional_retrieval(state: PolicyState) -> PolicyState:
     record_reflection("추가 검색", "부족한 섹션 보강 자료 확보")
     return {
         "documents": added_docs,
-        "iterations": state["iteration"] + 1,
+        "iteration": state.get("iteration", 0) + 1,
     }
 
 
