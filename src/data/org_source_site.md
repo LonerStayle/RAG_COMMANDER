@@ -1,3 +1,15 @@
+# 입지분석 에이전트
+ 1. 카카오 API   
+    https://developers.kakao.com/console/app/1330313/config
+ 
+# 매매가 비교 에이전트
+ 1. 카카오 API   
+    https://developers.kakao.com/console/app/1330313/config
+
+ 2. 국토교통부_아파트 매매 실거래가 자료 api
+    https://www.data.go.kr/data/15126469/openapi.do
+
+
 # 정책 에이전트
  1. 국가적 정책   
     https://www.molit.go.kr/USR/NEWS/m_71/lst.jsp?search_section=p_sec_2
@@ -64,13 +76,19 @@
     https://stat.molit.go.kr/portal/cate/statView.do?hRsId=32&hFormId=5328
 
 # 인구분석 에이전트
- 1. 국내 인구 이동 통계   
+ 1. 국내 인구 이동 통계     
     https://kosis.kr/publication/publicationThema.do?pubcode=AD
 
  2. 자치구별 연령층 분포   
     https://jumin.mois.go.kr#  
     - 연령별 인구현황 
 
+# 주택 청약 에이전트
+ 1. 주택 청약 2024 FAQ   
+    https://www.molit.go.kr/USR/policyData/m_34681/dtl.jsp?search=&srch_dept_nm=&srch_dept_id=&srch_usr_nm=&srch_usr_titl=Y&srch_usr_ctnt=&search_regdate_s=&search_regdate_e=&psize=10&s_category=&p_category=&lcmspage=1&id=4765
+
+ 2. 주택공급 규칙   
+    https://www.law.go.kr/%EB%B2%95%EB%A0%B9/%EC%A3%BC%ED%83%9D%EA%B3%B5%EA%B8%89%EC%97%90%EA%B4%80%ED%95%9C%EA%B7%9C%EC%B9%99
 
 
 

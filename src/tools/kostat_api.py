@@ -31,17 +31,32 @@ class SgisAPI:
             return cls.access_token
         else:
             raise Exception(f"❌ 토큰 발급 실패: {data}")
-
     @classmethod
     def request_api(cls, url: str, params: dict):
         token = cls.get_access_token()
         params["accessToken"] = token
-        res = requests.get(url, params=params)
-        data = res.json()
 
+        res = requests.get(url, params=params)
+        print(f"[SGIS] 요청 URL: {res.url}")
+        print(f"[SGIS] 응답 코드: {res.status_code}")
+        
+        # 1️⃣ 빈 응답 or HTML 대응
+        if not res.text.strip():
+            raise RuntimeError("⚠️ SGIS 응답이 비어 있습니다. 서버 점검 중이거나 요청 파라미터 오류입니다.")
+        if res.text.strip().startswith("<html"):
+            raise RuntimeError(f"⚠️ SGIS에서 HTML 반환: {res.text[:200]}")
+
+        # 2️⃣ JSON 파싱 시도
+        try:
+            data = res.json()
+        except Exception as e:
+            print("⚠️ JSONDecodeError 발생, 응답본문 일부:", res.text[:200])
+            raise
+
+        # 3️⃣ accessToken 만료 대응
         if (
             data.get("errCd") == -100
-            and "accessToken" in str(data.get("errMsg", "")).lower()
+            and "accesstoken" in str(data.get("errMsg", "")).lower()
         ):
             print("⚠️ accessToken 만료됨 → 재발급 중...")
             cls.access_token = None
@@ -50,7 +65,13 @@ class SgisAPI:
             res = requests.get(url, params=params)
             data = res.json()
 
+        # 4️⃣ SGIS 자체 오류 코드 처리
+        if data.get("errCd") != 0:
+            print(f"⚠️ SGIS 오류 발생: {data}")
+            raise RuntimeError(f"SGIS 오류: {data}")
+
         return data
+
 
 
 adm_dict = {
@@ -117,11 +138,14 @@ def get_10_year_after_house(gu_address: str):
         # 10년 이상들 조회
         "const_year": ["06", "07", "08", "09", "10", "11"],
     }
+    
     response = SgisAPI.request_api(HOUSE_URL, params)
     print("10년이상 노후도 호출 질문",llm_res.content)
     print("10년이상 노후도 호출 결과",response)
     return response["result"]
-
+    
+# return [{"house_cnt":"63298"}]
+    
 
 # 1인당 GDP 조회
 def get_one_people_gdp():
