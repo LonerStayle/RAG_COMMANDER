@@ -1,0 +1,31 @@
+# 부동산 정책 분석 배치 작업 설정
+# 여러 사업지에 대한 분석을 한번에 수행
+
+jobs:
+  - name: "강남구 아파트 사업"
+    pdf_files:
+      - "/mnt/user-data/uploads/251015_대출수요_관리_강화_방안_주요_FAQ.pdf"
+      - "/mnt/user-data/uploads/251015_주택시장_안정화_대책.pdf"
+      - "/mnt/user-data/uploads/0627.pdf"
+    target_area: "강남구"
+    main_type: "84㎡"
+    total_units: 500
+    output_path: "/home/claude/outputs/gangnam_report.md"
+  
+  - name: "서초구 주상복합 사업"
+    pdf_files:
+      - "/mnt/user-data/uploads/251015_대출수요_관리_강화_방안_주요_FAQ.pdf"
+      - "/mnt/user-data/uploads/251015_주택시장_안정화_대책.pdf"
+    target_area: "서초구"
+    main_type: "59㎡"
+    total_units: 800
+    output_path: "/home/claude/outputs/seocho_report.md"
+  
+  - name: "성남 분당 재건축 사업"
+    pdf_files:
+      - "/mnt/user-data/uploads/251015_주택시장_안정화_대책.pdf"
+      - "/mnt/user-data/uploads/0627.pdf"
+    target_area: "성남시 분당구"
+    main_type: "100㎡"
+    total_units: 1200
+    output_path: "/home/claude/outputs/bundang_report.md"

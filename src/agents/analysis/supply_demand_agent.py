@@ -81,6 +81,7 @@ def year10_after_house(state: SupplyDemandState) -> SupplyDemandState:
 
 
 def supply_housing(state: SupplyDemandState) -> SupplyDemandState:
+    
     return {}
 
 
@@ -204,10 +205,10 @@ def get_gdp_and_grdp(state: SupplyDemandState) -> SupplyDemandState:
     target_area = start_input[target_area_key]
     # '2018': 36791700,
     # '2019': 37006320,
-    get_one_people_gdp()
+    # get_one_people_gdp()
 
     # 강남구\n2018_당해년가격: 78135292000000...
-    one_people_grdp_retrieve(target_area)
+    # one_people_grdp_retrieve(target_area)
     return {
         one_people_gdp_key: get_one_people_gdp(),
         one_people_grdp_key: one_people_grdp_retrieve(target_area),

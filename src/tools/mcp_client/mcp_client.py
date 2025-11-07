@@ -7,6 +7,22 @@ load_dotenv()
 _client = None
 _tools = None
 
+import anyio
+from langchain_mcp_adapters import sessions
+from contextlib import asynccontextmanager
+
+_original_create_stdio_session = sessions._create_stdio_session
+
+@asynccontextmanager
+async def _patched_create_stdio_session(*args, **kwargs):
+    # timeout 구간을 context 전체에 적용
+    with anyio.move_on_after(180):  # 3분까지 허용
+        async with _original_create_stdio_session(*args, **kwargs) as session:
+            yield session
+
+# monkey-patch
+sessions._create_stdio_session = _patched_create_stdio_session
+
 def get_exa_config():
     """Exa MCP 예시"""
     MCP_KEY = os.getenv("MCP_KEY")
@@ -55,6 +71,7 @@ async def get_client():
             }
         )
     return _client
+
 
 async def get_tools():
     global _tools
