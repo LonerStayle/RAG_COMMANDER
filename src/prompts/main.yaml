@@ -203,7 +203,7 @@ MAIN_SOUCE_PAGE:
      원본 데이터 출처 1.(10년 이상 노후도 - sgis) : https://sgis.kostat.go.kr/developer/html/openApi/api/data.html
      원본 데이터 출처 2.(매매수급지수 - 공공데이터) : https://www.data.go.kr/data/15044273/fileData.do
      다운로르 링크: 없음
-     데이터 내용:
+     데이터 내용(다운로드 없으니 아래 내용을 보여줄 것):
      노후도: {year10_after_house}
      매매수급지수: {trade_balance}
 
