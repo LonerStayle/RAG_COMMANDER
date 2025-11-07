@@ -105,9 +105,8 @@ def agent(state: PolicyState) -> PolicyState:
         "result": response.content,
         national_context_key: state[national_context_key],
         region_context_key: state[region_context_key],
-        
         national_download_link_key:state[national_download_link_key],
-        region_download_link_key:state[region_download_link_key],
+        region_download_link_key:state[region_download_link_key]
     }
     return new_state
 

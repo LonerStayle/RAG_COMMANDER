@@ -124,7 +124,7 @@ class PolicyPDFLoader:
         """
         # 파일명에서 날짜 추출 시도
         file_name = os.path.basename(file_path)
-        file_data_match = re.search(fr'\d{6}|\d{4}\.\d{1,2}\.\d{1,2}', file_name)
+        file_data_match = re.search(r'(\d{6}|\d{4}\.\d{1,2}\.\d{1,2})', file_name)
 
         if file_data_match:
             return file_data_match.group(1) # 날짜 그룹 반환
@@ -217,8 +217,36 @@ class PolicyPDFLoader:
             file_path: 파일 경로
 
         Returns:
-            추출된 제목 문자열
+            추출된 제목 문자열 (없으면 "날짜 미상")
         """
 
+        file_name = os.path.basename(file_path)
+        title_from_file = file_name.replace('.pdf', '')
+        title_from_file = re.sub(r'\d+_?', '', title_from_file)
+        title_from_file = title_from_file.replace('_',' ').strip()
+
+        # 문서 내용에서 제목 찾기
+        lines = content.split('\n')
+
+        for line in lines[:10]:
+            line_stripped = line.strip()
+            line_length = len(line_stripped)
+
+            # 적절한 길이의 라인인지 확인 
+            if line_length < 10 or line_length > 100:
+                continue
+            
+            # 페이지 표시가 아닌지 확인
+            if line_stripped.startswith("["):
+                continue
+
+            # 제목으로 사용 가능한 라인 발견
+            return line_stripped
+
+        # 문서에서 제목을 찾지 못하는 경우 파일명 사용
+        return title_from_file
+
+# 전역 인스턴스 생성
+policy_pdf_loader = PolicyPDFLoader()
 
     
