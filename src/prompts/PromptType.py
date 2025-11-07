@@ -62,9 +62,33 @@ class PromptType(Enum):
     )
 
     POLICY_HUMAN = (
-        "POLICY_HUMAN",
+        "POLICY_COMPARISON_REQUEST",
         str(Path(get_project_root()) / "src" / "prompts" / "analysis_policy.yaml"),
-        "정책 분석 에이전트의 실행 메시지",
+        "정책 분석 에이전트의 비교 분석 요청 메시지",
+    )
+
+    POLICY_COMPARISON_SUMMARY = (
+        "POLICY_COMPARISON_SUMMARY",
+        str(Path(get_project_root()) / "src" / "prompts" / "analysis_policy.yaml"),
+        "정책 분석 에이전트의 비교 분석 요약 메시지",
+    )
+
+    POLICY_COMPARISON_SEGMENT_01 = (
+        "POLICY_COMPARISON_SEGMENT_01",
+        str(Path(get_project_root()) / "src" / "prompts" / "analysis_policy.yaml"),
+        "정책 분석 에이전트의 비교 분석 보고서 페이지 별 내용 01",
+    )
+    
+    POLICY_COMPARISON_SEGMENT_02 = (
+        "POLICY_COMPARISON_SEGMENT_02",
+        str(Path(get_project_root()) / "src" / "prompts" / "analysis_policy.yaml"),
+        "정책 분석 에이전트의 비교 분석 보고서 페이지 별 내용 02",
+    )
+    
+    POLICY_COMPARISON_SEGMENT_03 = (
+        "POLICY_COMPARISON_SEGMENT_03",
+        str(Path(get_project_root()) / "src" / "prompts" / "analysis_policy.yaml"),
+        "정책 분석 에이전트의 비교 분석 보고서 페이지 별 내용 03",
     )
 
     # ---3. 수급 분석 분석---

@@ -169,6 +169,98 @@ class PolicyPDFRetriever:
         keyword_count = len(keyword_results)
         keyword_weight = 1.0 - semantic_weight
 
-        for i, doc in enumerate(keyword_results):
+        for idx, doc in enumerate(keyword_results):
             doc_id = self._get_doc_id(doc)
-            keyword
+            keyword_score = keyword_weight * (1 - idx / keyword_count) if keyword_count > 0 else 0
+
+            if doc_id in combined_scores:
+                combined_scores[doc_id]['score'] += keyword_score
+            else:
+                combined_scores[doc_id] = {
+                    'doc': doc,
+                    'score': keyword_score
+                }
+
+        # 점수순 정렬
+        sorted_results = sorted(
+            combined_scores.values(),
+            key=lambda x: x['score'],
+            reverse=True
+            )
+
+        # 상위 k개 반환
+        result_docs = []
+        for item in sorted_results[:k]:
+            result_docs.append(item['doc'])
+
+        return result_docs
+
+    def _get_doc_id(self, doc: Document) -> str:
+        """
+        Document 고유 ID를 생성합니다.
+
+        Args:
+            doc: Document 객체
+
+        Returns:
+            고유 ID 문자열
+        """
+        source = doc.metadata.get('source', '')
+        chunk_id = doc.metadata.get('chunk_id', 0)
+        return f"{source}_{chunk_id}"
+
+    def _extract_keywords(self, query: str) -> List[str]:
+        """
+        쿼리에서 중요한 키워드를 추출합니다.
+
+        Args:
+            query: 검색쿼리
+
+        Returns:
+            추출된 키워드 리스트
+        """
+        keywords = []
+        # 중요 키워드 목록
+        important_terms = [
+            'LTV', 'DTI', 'DSR', '규제지역', '투기과열지구', '조정대상지역',
+            '대출', '주담대', '전세대출', '신용대출', '중도금대출',
+            '주택', '아파트', '분양', '청약', '전매제한',
+            '취득세', '양도세', '재산세', '종부세',
+            '수도권', '지방', '서울', '경기',
+            '금리', '한도', '만기', '상환'
+        ]
+
+        query_upper = query.upper()
+
+        # 중요 키워드 확인
+        for term in important_terms:
+            if term.upper() in query_upper:
+                keywords.append(term)
+
+        # 숫자 패턴 추출(날짜, 비율 등)
+        numbers_pattern = r'\d+(?:\.\d+)?[%년월일억원]?' # \d+ - 1개 이상의 숫자 (예: 70, 2024, 5)
+        # (?:\.\d+)? - 소수점과 숫자가 선택적으로 올 수 있음 (예: .5, .75)
+        # ? - 0번 또는 1번 나타남
+        # [%년월일억원]? - 단위 문자가 선택적으로 올 수 있음 (예: %, 년, 월, 일, 억, 원)
+        #   ? - 바로 앞의 문자 집합이 0번 또는 1번 나타남 (있어도 되고 없어도 됨)
+        #(\.\d+)? - 소수점 부분을 그룹1에 저장
+        # (?:\.\d+)? - 소수점 부분을 저장 안 함, 그냥 묶기만
+        numbers = re.findall(numbers_pattern, query)
+        keywords.extend(numbers)
+
+        return keywords
+
+    def as_retriever(self, search_kwargs: Optional[Dict] = None):
+        """
+        LangChain Retriever 인터페이스를 제공합니다.
+
+        Args:
+            search_kwargs: 검색 옵션 딕셔너리
+
+        Returns:
+            LangChain Retriever 객체
+        """
+        if search_kwargs is None:
+            search_kwargs = {"k": 5}
+
+        return self.vector_store.as_retriever(search_kwargs=search_kwargs)

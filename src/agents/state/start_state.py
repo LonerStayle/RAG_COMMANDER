@@ -32,6 +32,12 @@ class StartInput(BaseModel):
     main_type: Optional[str] = Field(
         description="단지의 대표 타입 혹은 타입별 세대수입니다. 예시: 84제곱미터 or 84m² or {'59㎡': 300, '84㎡': 700}"
     )
+    
+    policy_period: Optional[str] = Field(description="분석할 정책 기간입니다. 예시: 최근 1년, 2024-2025년 등")
+    
+    policy_count: Optional[int] = Field(description="분석할 정책 개수입니다. 예시: 1, 2, 3")
+    
+    policy_list: Optional[str] = Field(description="분석할 정책 리스트입니다. 예시: ['2025.10.15', '2025.06.27']")
 
     total_units: Optional[str] = Field(description="단지의 전체 세대수입니다. 예시: 1000세대 or 1000")
     

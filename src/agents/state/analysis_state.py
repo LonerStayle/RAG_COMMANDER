@@ -1,4 +1,5 @@
 from typing import TypedDict, Dict, Annotated, Optional
+from agents.analysis.policy_agent import ReportCheck
 from langgraph.graph.message import add_messages
 from langchain_core.messages import AnyMessage
 import operator
@@ -24,11 +25,16 @@ class PolicyState(TypedDict):
     start_input: dict
     policy_output: dict
     national_context: Optional[str]
+    messages: Annotated[list[AnyMessage], add_messages] # LLM 대화로그
+    my_tool: str
+    pdf_context: Optional[str]
+    retry_count: Optional[int]
     region_context: Optional[str]
     national_download_link: Optional[str]
     region_download_link: Optional[str]
-    messages: Annotated[list[AnyMessage], add_messages]
-    my_tool: str
+    report_draft: str  # 보고서 초안
+    completeness_check: ReportCheck # self check 결과
+    documents: list # PDF/뉴스 등 자료
 
 
 @attach_auto_keys
