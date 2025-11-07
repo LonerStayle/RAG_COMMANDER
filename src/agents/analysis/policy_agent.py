@@ -136,6 +136,9 @@ def analysis_setting(state: PolicyState) -> PolicyState:
         policy_period=start_input[StartInput.KEY.policy_period],
         policy_count=start_input[StartInput.KEY.policy_count],
         policy_list=start_input[StartInput.KEY.policy_list],
+        main_type=start_input.get(StartInput.KEY.main_type, ""),
+        total_units=start_input.get(StartInput.KEY.total_units, ""),
+        pdf_context=state.get(pdf_context_key, ""),
     )
     messages = [
         SystemMessage(content=system_prompt),
