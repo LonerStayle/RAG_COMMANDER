@@ -14,6 +14,7 @@ class MainState(TypedDict, total=False):
     # 보고서 초안 및 최종 보고서
     final_report: Optional[str]
     logs:list[str]
+    source: Optional[str]
     
     # 상태 (현재 단계)
     status: Literal[

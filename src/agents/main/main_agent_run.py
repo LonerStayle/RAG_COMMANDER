@@ -29,9 +29,14 @@ async def main():
     thread = {"configurable": {"thread_id": "1"}}
     result = await graph.ainvoke(
         {
+            # messages_key: [
+            #     HumanMessage(
+            #         content="서울 강남구 논현동, 84타입, 500세대\n이메일은 immortal0900@gmail.com"
+            #     )
+            # ]
             messages_key: [
                 HumanMessage(
-                    content="서울 강남구 논현동, 84타입, 500세대\n이메일은 immortal0900@gmail.com"
+                    content="서울 송파구 석촌동, 84타입, 120세대\n이메일은 dlwlstjq410@gmail.com"
                 )
             ]
         },

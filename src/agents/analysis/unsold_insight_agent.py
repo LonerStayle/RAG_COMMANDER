@@ -7,8 +7,7 @@ from utils.util import get_today_str
 from utils.llm import LLMProfile
 from prompts import PromptManager, PromptType
 from langgraph.prebuilt import ToolNode
-from langchain.chat_models import init_chat_model
-
+from tools.context_to_csv import unsold_to_drive
 
 @tool(parse_docstring=True)
 def think_tool(reflection: str) -> str:
@@ -62,6 +61,7 @@ output_key = UnsoldInsightState.KEY.unsold_insight_output
 start_input_key = UnsoldInsightState.KEY.start_input
 messages_key = UnsoldInsightState.KEY.messages
 unsold_unit_key = UnsoldInsightState.KEY.unsold_unit
+unsold_unit_download_link_key = UnsoldInsightState.KEY.unsold_unit_download_link
 target_area_key = StartInput.KEY.target_area
 
 
@@ -77,7 +77,10 @@ from tools.unsold_units import unsold_units
 def get_unsold_unit(state: UnsoldInsightState) -> UnsoldInsightState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
-    return {unsold_unit_key: unsold_units(target_area)}
+    docs = unsold_units(target_area)
+    
+    return {unsold_unit_key: docs,
+            unsold_unit_download_link_key:unsold_to_drive(docs,target_area)}
 
 
 def analysis_setting(state: UnsoldInsightState) -> UnsoldInsightState:
@@ -105,6 +108,7 @@ def agent(state: UnsoldInsightState) -> UnsoldInsightState:
     new_state[output_key] = {
         "result": response.content,
         unsold_unit_key: state[unsold_unit_key],
+        unsold_unit_download_link_key:state[unsold_unit_download_link_key]
     }
     return new_state
 

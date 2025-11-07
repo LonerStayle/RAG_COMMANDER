@@ -10,8 +10,8 @@ class SgisAPI:
     @classmethod
     def get_access_token(cls):
         """토큰이 만료되었으면 새로 발급받고, 아니면 캐시된 토큰을 반환"""
-        if cls.access_token and time.time() < cls.token_expire:
-            return cls.access_token
+        # if cls.access_token and time.time() < cls.token_expire:
+        #     return cls.access_token
 
         AUTH_URL = "https://sgisapi.kostat.go.kr/OpenAPI3/auth/authentication.json"
         KOSIS_CONSUMER_KEY = os.getenv("KOSIS_CONSUMER_KEY")
@@ -140,8 +140,6 @@ def get_10_year_after_house(gu_address: str):
     }
     
     response = SgisAPI.request_api(HOUSE_URL, params)
-    print("10년이상 노후도 호출 질문",llm_res.content)
-    print("10년이상 노후도 호출 결과",response)
     return response["result"]
     
 # return [{"house_cnt":"63298"}]

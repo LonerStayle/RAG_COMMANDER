@@ -10,11 +10,18 @@ main_type_key = StartInput.KEY.main_type
 total_units_key = StartInput.KEY.total_units
 housing_faq_context_key = HousingFaqState.KEY.housing_faq_context
 housing_rule_context_key = HousingFaqState.KEY.housing_rule_context
+housing_faq_download_link_key = HousingFaqState.KEY.housing_faq_download_link
+housing_rule_download_link_key = HousingFaqState.KEY.housing_rule_download_link
 messages_key = HousingFaqState.KEY.messages
 
 from tools.rag.retriever.housing_faq_retriever import (
     housing_rule_retrieve,
     housing_faq_retrieve,
+)
+
+from tools.context_to_csv import (
+    housing_faq_context_to_drive,
+    housing_rule_context_to_drive,
 )
 
 
@@ -29,7 +36,11 @@ def get_rule_data(state: HousingFaqState) -> HousingFaqState:
     docs = []
     for doc in retriever.invoke(query):
         docs.append(doc.page_content)
-    return {housing_rule_context_key: docs}
+
+    return {
+        housing_rule_context_key: docs,
+        housing_rule_download_link_key: housing_rule_context_to_drive(docs),
+    }
 
 
 def get_faq_data(state: HousingFaqState) -> HousingFaqState:
@@ -43,7 +54,10 @@ def get_faq_data(state: HousingFaqState) -> HousingFaqState:
     docs = []
     for doc in retriever.invoke(query):
         docs.append(doc.page_content)
-    return {housing_faq_context_key: docs}
+    return {
+        housing_faq_context_key: docs,
+        housing_faq_download_link_key: housing_faq_context_to_drive(docs),
+    }
 
 
 from prompts import PromptManager, PromptType
@@ -86,6 +100,8 @@ def call_llm(state: HousingFaqState) -> HousingFaqState:
         "result": response.content,
         housing_faq_context_key: state[housing_faq_context_key],
         housing_rule_context_key: state[housing_rule_context_key],
+        housing_faq_download_link_key: state[housing_faq_download_link_key],
+        housing_rule_download_link_key: state[housing_rule_download_link_key],
     }
     return new_state
 

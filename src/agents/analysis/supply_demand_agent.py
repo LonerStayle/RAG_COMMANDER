@@ -5,11 +5,20 @@ from agents.state.start_state import StartInput
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from utils.util import get_today_str
 from utils.llm import LLMProfile
-from langchain.chat_models import init_chat_model
+
 from prompts import PromptManager, PromptType
 from langgraph.prebuilt import ToolNode
 import json
-import asyncio
+from tools.context_to_csv import (
+    jense_to_drive,
+    sales_to_drive,
+    rate_to_drive,
+    home_mortagage_to_drive,
+    housing_sales_volume_to_drive,
+    planning_move_to_csv,
+    pre_promise_competition_to_csv,
+    gdp_and_grdp_to_drive,
+)
 
 
 @tool(parse_docstring=False)
@@ -57,6 +66,23 @@ housing_sales_volume_key = SupplyDemandState.KEY.housing_sales_volume
 planning_move_key = SupplyDemandState.KEY.planning_move
 pre_pomise_competition_key = SupplyDemandState.KEY.pre_pomise_competition
 
+jeonse_price_download_link_key = SupplyDemandState.KEY.jeonse_price_download_link
+sale_price_download_link_key = SupplyDemandState.KEY.sale_price_download_link
+use_kor_rate_download_link_key = SupplyDemandState.KEY.use_kor_rate_download_link
+home_mortgage_download_link_key = SupplyDemandState.KEY.home_mortgage_download_link
+one_people_gdp_grdp_download_link_key = (
+    SupplyDemandState.KEY.one_people_gdp_grdp_download_link
+)
+
+housing_sales_volume_download_link_key = (
+    SupplyDemandState.KEY.housing_sales_volume_download_link
+)
+planning_move_download_link_key = SupplyDemandState.KEY.planning_move_download_link
+pre_pomise_competition_download_link_key = (
+    SupplyDemandState.KEY.pre_pomise_competition_download_link
+)
+
+
 llm = LLMProfile.analysis_llm()
 tool_list = [think_tool]
 llm_with_tools = llm.bind_tools(tool_list)
@@ -81,7 +107,7 @@ def year10_after_house(state: SupplyDemandState) -> SupplyDemandState:
 
 
 def supply_housing(state: SupplyDemandState) -> SupplyDemandState:
-    
+
     return {}
 
 
@@ -92,8 +118,15 @@ from tools.pre_promise_competition_tool_v2 import pre_promise
 async def pre_pomise_competition(state: SupplyDemandState) -> SupplyDemandState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
-    result = await pre_promise(target_area)
-    return {pre_pomise_competition_key: result}
+    # result = await pre_promise(target_area)
+
+    return {
+        pre_pomise_competition_key: "",
+        # pre_pomise_competition_key: result,
+        # sale_price_download_link_key: pre_promise_competition_to_csv(
+        #     result, target_area
+        # ),
+    }
 
 
 from tools.rag.retriever.sale_price_retriever import sale_price_retrieve
@@ -112,7 +145,12 @@ def sale_and_jeonse_price_ratio(state: SupplyDemandState) -> SupplyDemandState:
     # 2020년 4월: 776656.0
     sale_price = sale_price_retrieve(target_area)
     jeonse_price = jeonse_price_retrieve(target_area)
-    return {jeonse_price_key: jeonse_price, sale_price_key: sale_price}
+    return {
+        jeonse_price_key: jeonse_price,
+        sale_price_key: sale_price,
+        jeonse_price_download_link_key: jense_to_drive(jeonse_price),
+        sale_price_download_link_key: sales_to_drive(sale_price),
+    }
 
 
 from tools.Trade_Balance_tool import get_trade_balance
@@ -158,8 +196,11 @@ def planning_move(state: SupplyDemandState) -> SupplyDemandState:
     # '입주예정월: 202601\n지역: 서울\n사업유형: 임대\n주소: 서울특별시 강북구 수유동 47-52\n주택명: 수유동47-52(청년안심주택)\n세대수: 426',
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
-
-    return {planning_move_key: planning_move_retrieve(target_area)}
+    docs = planning_move_retrieve(target_area)
+    return {
+        planning_move_key: docs,
+        planning_move_download_link_key: planning_move_to_csv(docs, target_area),
+    }
 
 
 from tools.rag.retriever.housing_sales_volume_retriever import (
@@ -173,7 +214,12 @@ def housing_sales_volume(state: SupplyDemandState) -> SupplyDemandState:
     target_area = start_input[target_area_key]
     volumes = housing_sales_volume_retrieve(target_area)
 
-    return {housing_sales_volume_key: volumes}
+    return {
+        housing_sales_volume_key: volumes,
+        housing_sales_volume_download_link_key: housing_sales_volume_to_drive(
+            volumes, target_area
+        ),
+    }
 
 
 from tools.kor_usa_rate import get_rate
@@ -183,7 +229,10 @@ from tools.kor_usa_rate import get_rate
 def use_kor_rate(state: SupplyDemandState) -> SupplyDemandState:
     # {'date': '2025-09', 'kr_rate': 2.5, 'us_rate': 4.22}
     jsons = json.loads(get_rate())
-    return {use_kor_rate_key: jsons["data"]}
+    return {
+        use_kor_rate_key: jsons["data"],
+        use_kor_rate_download_link_key: rate_to_drive(jsons["data"]),
+    }
 
 
 from tools.rag.retriever.home_mortgage_retriever import home_mortgage_retrieve
@@ -192,7 +241,11 @@ from tools.rag.retriever.home_mortgage_retriever import home_mortgage_retrieve
 # 주택담보금리
 def get_home_mortgage(state: SupplyDemandState) -> SupplyDemandState:
     # ' 2025-08-01\n대출평균(연%): 4.06\n가계대출(연%): 4.17\n주택담보대출(연%): 3.96',
-    return {home_mortgage_key: home_mortgage_retrieve()}
+    docs = home_mortgage_retrieve()
+    return {
+        home_mortgage_key: home_mortgage_retrieve(),
+        home_mortgage_download_link_key: home_mortagage_to_drive(docs),
+    }
 
 
 from tools.kostat_api import get_one_people_gdp
@@ -209,9 +262,14 @@ def get_gdp_and_grdp(state: SupplyDemandState) -> SupplyDemandState:
 
     # 강남구\n2018_당해년가격: 78135292000000...
     # one_people_grdp_retrieve(target_area)
+    gdp = get_one_people_gdp()
+    grdp = one_people_grdp_retrieve(target_area)
     return {
-        one_people_gdp_key: get_one_people_gdp(),
-        one_people_grdp_key: one_people_grdp_retrieve(target_area),
+        one_people_gdp_key: gdp,
+        one_people_grdp_key: grdp,
+        one_people_gdp_grdp_download_link_key: gdp_and_grdp_to_drive(
+            get_one_people_gdp(), one_people_grdp_retrieve(target_area), target_area
+        ),
     }
 
 
@@ -245,7 +303,7 @@ def analysis_setting(state: SupplyDemandState) -> SupplyDemandState:
         one_people_grdp=one_people_grdp,
         housing_sales_volume=housing_sales_volume,
         planning_move=planning_move,
-        pre_pomise_competition=pre_pomise_competition,
+        pre_pomise_competition=pre_pomise_competition,        
     )
 
     messages = [
@@ -271,8 +329,18 @@ def agent(state: SupplyDemandState) -> SupplyDemandState:
         one_people_gdp_key: state[one_people_gdp_key],
         one_people_grdp_key: state[one_people_grdp_key],
         housing_sales_volume_key: state[housing_sales_volume_key],
-        planning_move_key: state[planning_move_key],
+        planning_move_key: state[planning_move_key],        
         pre_pomise_competition_key: state[pre_pomise_competition_key],
+        
+        jeonse_price_download_link_key: state[jeonse_price_download_link_key],
+        sale_price_download_link_key: state[sale_price_download_link_key],
+        use_kor_rate_download_link_key: state[use_kor_rate_download_link_key],
+        home_mortgage_download_link_key: state[home_mortgage_download_link_key],
+        one_people_gdp_grdp_download_link_key: state[one_people_gdp_grdp_download_link_key],
+        housing_sales_volume_download_link_key: state[housing_sales_volume_download_link_key],
+        planning_move_download_link_key: state[planning_move_download_link_key],
+        # pre_pomise_competition_download_link_key: state[pre_pomise_competition_download_link_key],
+        
     }
     return new_state
 
