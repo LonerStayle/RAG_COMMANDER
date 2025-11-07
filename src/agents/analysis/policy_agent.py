@@ -1,16 +1,17 @@
 # 구조와 상태 정의
 from typing import TypedDict, Annotated
 from langgraph.graph import StateGraph, START, END
-from langchain_core.messages import AnyMessage, add_messages
-from langchain_core.messages import SystemMessage, HumanMessage
+from langgraph.graph.message import add_messages
+from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel, Field
 
-# 프로젝트 내부 모듈듈
+# 프로젝트 내부 모듈
 from agents.state.analysis_state import PolicyState
 from agents.state.start_state import StartInput
+from agents.state.policy_types import ReportCheck
 from prompts import PromptManager, PromptType
 from tools.context_to_csv import region_news_to_drive, netional_news_to_drive
 from tools.estate_web_crawling_tool import collect_articles_result
@@ -34,15 +35,6 @@ def think_tool(reflection: str) -> str:
     return f"Reflection recorded: {reflection}"
 
 
-class ReportCheck(BaseModel):
-    """
-    보고서가 템플릿을 충족했는지 나타내는 구조화된 평가 결과
-    """
-    is_complete: bool = Field(description="모든 필수 항목이 채워졌으면 True")
-    missing_sections: list[str] = Field(default_factory=list)
-    missing_information: str = Field(default="")
-
-
 llm = LLMProfile.analysis_llm()
 tool_list = [think_tool]
 llm_with_tools = llm.bind_tools(tool_list)
@@ -64,16 +56,18 @@ region_download_link_key = PolicyState.KEY.region_download_link
 pdf_context_key = PolicyState.KEY.pdf_context
 retry_count_key = PolicyState.KEY.retry_count
 
-MAX_ITERATIONS = 3 # 재검색 최대 횟수, LLM이 전체 보고서를 작성 → 평가 → 재검색하는 전체 사이클당 1번씩 증가
+MAX_ITERATIONS = 3  # 재검색 최대 횟수, LLM이 전체 보고서를 작성 → 평가 → 재검색하는 전체 사이클당 1번씩 증가
+
 
 def record_reflection(title: str, hint: str) -> None:
     """
     노드가 끝날 때마다 think_tool 도구를 호출하여 간단한 메모 남김
     """
-    think_tool(f"{title}\n{hint}")
+    think_tool.invoke({"reflection": f"{title}\n{hint}"})
+
 
 # 1. 자료수집
-def nathional_news(state: PolicyState) -> PolicyGraphState:
+def nathional_news(state: PolicyState) -> PolicyState:
     docs = national_policy_retrieve()
     record_reflection("국가 뉴스 수집", "전국 정책 기사 정리")
     return {
@@ -89,6 +83,7 @@ def national_news(state: PolicyState) -> PolicyState:
         national_context_key: docs,
         national_download_link_key: netional_news_to_drive(docs),
     }
+
 
 def region_news(state: PolicyState) -> PolicyState:
     docs = collect_articles_result()
@@ -106,10 +101,28 @@ def policy_pdf_retrieve(state: PolicyState) -> PolicyState:
     policy_count = start_input.get(StartInput.KEY.policy_count, "")
     policy_list = start_input.get(StartInput.KEY.policy_list, "")
     target_area = start_input.get(StartInput.KEY.target_area, "")
-    
-    docs = retriever.search(target_area, policy_period, policy_count, policy_list)
+
+    # 검색 쿼리 구성
+    query_parts = []
+    if target_area:
+        query_parts.append(target_area)
+    if policy_period:
+        query_parts.append(policy_period)
+    if policy_list:
+        query_parts.append(policy_list)
+
+    query = " ".join(query_parts) if query_parts else target_area or "정책"
+
+    # policy_count를 k 값으로 사용 (기본값 3)
+    try:
+        k = int(policy_count.replace("개", "").strip()) if policy_count else 3
+    except ValueError:
+        k = 3
+
+    docs = retriever.hybrid_search(query, k=k)
     record_reflection("PDF 검색", "정책 PDF 주요 문단 확보")
     return {pdf_context_key: docs}
+
 
 # 프롬프트 세팅
 def analysis_setting(state: PolicyState) -> PolicyState:
@@ -123,7 +136,6 @@ def analysis_setting(state: PolicyState) -> PolicyState:
         policy_period=start_input[StartInput.KEY.policy_period],
         policy_count=start_input[StartInput.KEY.policy_count],
         policy_list=start_input[StartInput.KEY.policy_list],
-
     )
     messages = [
         SystemMessage(content=system_prompt),
@@ -132,15 +144,22 @@ def analysis_setting(state: PolicyState) -> PolicyState:
     record_reflection("프롬프트 준비", "시스템/휴먼 프롬프트 설정")
     return {
         messages_key: messages,
-        "documents" : state.get(pdf_context_key, []),
-        "yaml_context" : {
+        "documents": state.get(pdf_context_key, []),
+        "yaml_context": {
             "summary": PromptManager(PromptType.POLICY_COMPARISON_SUMMARY).get_prompt(),
-            "segment_01": PromptManager(PromptType.POLICY_COMPARISON_SEGMENT_01).get_prompt(),
-            "segment_02": PromptManager(PromptType.POLICY_COMPARISON_SEGMENT_02).get_prompt(),
-            "segment_03": PromptManager(PromptType.POLICY_COMPARISON_SEGMENT_03).get_prompt(),
+            "segment_01": PromptManager(
+                PromptType.POLICY_COMPARISON_SEGMENT_01
+            ).get_prompt(),
+            "segment_02": PromptManager(
+                PromptType.POLICY_COMPARISON_SEGMENT_02
+            ).get_prompt(),
+            "segment_03": PromptManager(
+                PromptType.POLICY_COMPARISON_SEGMENT_03
+            ).get_prompt(),
         },
-        "iteration":0,
+        "iteration": 0,
     }
+
 
 # 3. 보고서 작성 및 평가
 def generate_initial_report(state: PolicyState) -> PolicyState:
@@ -148,7 +167,9 @@ def generate_initial_report(state: PolicyState) -> PolicyState:
     자료 기반 보고서 초안 작성
     """
     messages = state[messages_key]
-    response = llm_with_tools.invoke(messages) # LLM에 메시지를 전달하여 보고서 초안을 생성
+    response = llm_with_tools.invoke(
+        messages
+    )  # LLM에 메시지를 전달하여 보고서 초안을 생성
     new_messages = messages + [response]
     record_reflection("초안 작성", "자료 기반 첫 보고서 작성")
     return {
@@ -164,7 +185,6 @@ def evaluate_report_completeness(state: PolicyState) -> PolicyState:
     draft = state["report_draft"]
     yaml_context = state["yaml_context"]
     template = (
-
         "=== Segment 01 Template ===\n"
         f"{yaml_context['segment_01']}\n\n"
         "=== Segment 02 Template ===\n"
@@ -186,21 +206,30 @@ def decide_next_step(state: PolicyState) -> str:
     """
     조건분기: 완성 시 종료, 부족하면 재검색
     """
-    check = state["completeness_check"] # 이전 단계에서 평가한 보고서 완성도 결과 가져옴옴
+    check = state[
+        "completeness_check"
+    ]  # 이전 단계에서 평가한 보고서 완성도 결과 가져옴옴
     if check.is_complete:
         return "__end__"
-    if state["iteration"] >= MAX_ITERATIONS: # 최대 반복 횟수에 도달하면 더 이상 재검색하지 않고 종료
+    if (
+        state["iteration"] >= MAX_ITERATIONS
+    ):  # 최대 반복 횟수에 도달하면 더 이상 재검색하지 않고 종료
         return "__end__"
     return "execute_retrieval"  # 보고서에 부족한 내용이 있으니 추가 자료를 검색하는 노드(execute_retrieval)로 이동
     #  "execute_retrieval" 는 다음 노드
 
+
 # 4. 재검색과 수정
 def execute_additional_retrieval(state: PolicyState) -> PolicyState:
-    queries = state["completeness_check"].search_queries # evaluate_report_completeness에서 나온 부족한 항목과 검색어 리스트
+    queries = state[
+        "completeness_check"
+    ].search_queries  # evaluate_report_completeness에서 나온 부족한 항목과 검색어 리스트
     retriever = PolicyPDFRetriever()
     new_docs = []
     for query in queries:
-        new_docs.extend(retriever.search(query)) # 각 검색어로 관련 문서를 찾아서 new_docs 리스트에 추가
+        new_docs.extend(
+            retriever.hybrid_search(query, k=3)
+        )  # 각 검색어로 관련 문서를 찾아서 new_docs 리스트에 추가
     added_docs = state["documents"] + new_docs
     record_reflection("추가 검색", "부족한 섹션 보강 자료 확보")
     return {
@@ -223,20 +252,21 @@ def revise_report(state: PolicyState) -> PolicyState:
     reply = llm_with_tools.invoke([HumanMessage(content=prompt)])
     record_reflection("보고서 수정", "추가 자료 반영")
     return {
-        "report_draft": reply.content, #  LLM이 생성한 수정된 보고서 내용을 report_draft 상태 키에 저장장. reply는 llm_with_tools.invoke()의 응답 객체이고, .content는 실제 텍스트 내용
-        messages_key: state[messages_key] + [reply], # 대화 로그에 수정된 보고서 내용을 추가
+        "report_draft": reply.content,  #  LLM이 생성한 수정된 보고서 내용을 report_draft 상태 키에 저장장. reply는 llm_with_tools.invoke()의 응답 객체이고, .content는 실제 텍스트 내용
+        messages_key: state[messages_key]
+        + [reply],  # 대화 로그에 수정된 보고서 내용을 추가
     }
 
 
 def agent(state: PolicyState) -> PolicyState:
-    """ 최종 결과 묶어 반환 """
+    """최종 결과 묶어 반환"""
 
     output = {
         "result": state["report_draft"],
         national_context_key: state[national_context_key],
         region_context_key: state[region_context_key],
-        national_download_link_key:state[national_download_link_key],
-        region_download_link_key:state[region_download_link_key]
+        national_download_link_key: state[national_download_link_key],
+        region_download_link_key: state[region_download_link_key],
     }
     record_reflection("최종 기록", "보고서와 참고링크 정리")
     return {output_key: output}
@@ -263,7 +293,6 @@ evaluate_completeness_key = "evaluate_completeness"
 revise_report_key = "revise"
 
 
-
 graph_builder = StateGraph(PolicyState)
 graph_builder.add_node(national_news_key, national_news)
 graph_builder.add_node(region_news_key, region_news)
@@ -284,11 +313,10 @@ graph_builder.add_edge(policy_pdf_retrieve_key, analysis_setting_key)
 graph_builder.add_edge(analysis_setting_key, draft_key)
 graph_builder.add_edge(draft_key, evaluate_completeness_key)
 graph_builder.add_conditional_edges(
-    evaluate_completeness_key, # 완성도 평가
-    decide_next_step, # 완성 시 종료, 부족하면 재검색
-    [execute_retrieval_key, END] # 보고서가 불완전 하면 자료 추가 검색색
-
-) 
+    evaluate_completeness_key,  # 완성도 평가
+    decide_next_step,  # 완성 시 종료, 부족하면 재검색
+    [execute_retrieval_key, END],  # 보고서가 불완전 하면 자료 추가 검색색
+)
 
 graph_builder.add_edge(execute_retrieval_key, revise_report_key)
 graph_builder.add_edge(revise_report_key, evaluate_completeness_key)

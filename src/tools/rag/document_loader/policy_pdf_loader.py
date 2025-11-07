@@ -33,6 +33,7 @@ class PolicyDocument:
     policy_date: str
     policy_type: PolicyType
     title: str
+    content: str
     metadata: Dict[str, Any]
 
 class PolicyPDFLoader:
@@ -65,14 +66,14 @@ class PolicyPDFLoader:
         content = self._combine_documents(langchain_documents)
 
         # 정책 메타데이터 추출
-        policy_data = self._extract_policy_data(content, file_path)
+        policy_date = self._extract_policy_data(content, file_path)
         policy_type = self._determine_policy_type(content, file_path)
         title = self._extract_title(content, file_path)
 
         # 메타데이터 준비
         metadata = {
             "source": file_path,
-            "policy_data": policy_data,
+            "policy_date": policy_date,
             "policy_type": policy_type.value,
             "title": title
         }

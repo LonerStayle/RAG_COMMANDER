@@ -50,7 +50,7 @@ class FileHashManager:
         if not file_hash:
             return False
 
-        return file_hash in self.get_file_hash
+        return file_hash in self.loaded_hashes
 
     def mark_as_loaded(self, file_path: str) -> None:
         """

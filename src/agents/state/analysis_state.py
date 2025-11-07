@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from typing import TypedDict, Dict, Annotated, Optional
-from agents.analysis.policy_agent import ReportCheck
 from langgraph.graph.message import add_messages
 from langchain_core.messages import AnyMessage
 import operator
 from utils.util import attach_auto_keys
+from agents.state.policy_types import ReportCheck
 
 
 @attach_auto_keys
@@ -25,7 +27,7 @@ class PolicyState(TypedDict):
     start_input: dict
     policy_output: dict
     national_context: Optional[str]
-    messages: Annotated[list[AnyMessage], add_messages] # LLM 대화로그
+    messages: Annotated[list[AnyMessage], add_messages]  # LLM 대화로그
     my_tool: str
     pdf_context: Optional[str]
     retry_count: Optional[int]
@@ -33,8 +35,8 @@ class PolicyState(TypedDict):
     national_download_link: Optional[str]
     region_download_link: Optional[str]
     report_draft: str  # 보고서 초안
-    completeness_check: ReportCheck # self check 결과
-    documents: list # PDF/뉴스 등 자료
+    completeness_check: ReportCheck  # self check 결과
+    documents: list  # PDF/뉴스 등 자료
 
 
 @attach_auto_keys
@@ -67,9 +69,9 @@ class PopulationInsightState(TypedDict):
     start_input: dict
     population_insight_output: dict
     age_population_context: Optional[str]
-    age_population_download_link:Optional[str]
+    age_population_download_link: Optional[str]
     move_population_context: Optional[str]
-    move_population_download_link:Optional[str]
+    move_population_download_link: Optional[str]
     messages: Annotated[list[AnyMessage], add_messages]
 
 
@@ -79,26 +81,26 @@ class SupplyDemandState(TypedDict):
     supply_demand_output: dict
 
     year10_after_house: Optional[str]
-    year10_after_house_download_link:Optional[str]
+    year10_after_house_download_link: Optional[str]
     jeonse_price: Optional[str]
-    jeonse_price_download_link:Optional[str]
+    jeonse_price_download_link: Optional[str]
     sale_price: Optional[str]
-    sale_price_download_link:Optional[str]
+    sale_price_download_link: Optional[str]
     trade_balance: Optional[str]
-    trade_balance_download_link:Optional[str]
+    trade_balance_download_link: Optional[str]
     use_kor_rate: Optional[str]
-    use_kor_rate_download_link:Optional[str]
+    use_kor_rate_download_link: Optional[str]
     home_mortgage: Optional[str]
-    home_mortgage_download_link:Optional[str]
+    home_mortgage_download_link: Optional[str]
     one_people_gdp: Optional[str]
     one_people_grdp: Optional[str]
-    one_people_gdp_grdp_download_link:Optional[str]
+    one_people_gdp_grdp_download_link: Optional[str]
     housing_sales_volume: Optional[str]
-    housing_sales_volume_download_link:Optional[str]
+    housing_sales_volume_download_link: Optional[str]
     planning_move: Optional[str]
-    planning_move_download_link:Optional[str]
+    planning_move_download_link: Optional[str]
     pre_pomise_competition: Optional[str]
-    pre_pomise_competition_download_link:Optional[str]
+    pre_pomise_competition_download_link: Optional[str]
 
     messages: Annotated[list[AnyMessage], add_messages]
 

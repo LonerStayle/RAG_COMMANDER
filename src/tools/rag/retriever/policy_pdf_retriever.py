@@ -44,6 +44,10 @@ class PolicyPDFRetriever:
 
         # 각 정책 문서를 청크로 분할 
         for policy_doc in policy_documents:
+            # content가 문자열인지 확인
+            if not isinstance(policy_doc.content, str):
+                raise TypeError(f"policy_doc.content는 문자열이어야 합니다. 현재 타입: {type(policy_doc.content)}")
+            
             chunks = text_splitter.split_text(policy_doc.content)
             for chunk_idx, chunk in enumerate(chunks):
                 langchain_doc = Document(
@@ -99,7 +103,7 @@ class PolicyPDFRetriever:
 
         for doc in self.documents_cache:
             score = 0
-            content_lower = doc.page_content.lower()
+            content_lower = doc.content.lower()
 
             for keyword in keywords:
                 keyword_lower = keyword.lower()
