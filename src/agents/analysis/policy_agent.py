@@ -68,19 +68,12 @@ def national_news(state: PolicyState) -> PolicyState:
 
 
 from tools.estate_web_crawling_tool import collect_articles_result
-<<<<<<< HEAD
-
-
-def region_news(state: PolicyState) -> PolicyState:
-    return {region_context_key: collect_articles_result()}
-=======
 def region_news(state: PolicyState) -> PolicyState:
     docs = collect_articles_result()
     return {
         region_context_key: docs,
         region_download_link_key: region_news_to_drive(docs),
     }
->>>>>>> bdd1d3437ec47d94beef9764fa6ef4baaab1ac05
 
 
 def analysis_setting(state: PolicyState) -> PolicyState:
@@ -112,12 +105,9 @@ def agent(state: PolicyState) -> PolicyState:
         "result": response.content,
         national_context_key: state[national_context_key],
         region_context_key: state[region_context_key],
-<<<<<<< HEAD
-=======
         
         national_download_link_key:state[national_download_link_key],
         region_download_link_key:state[region_download_link_key],
->>>>>>> bdd1d3437ec47d94beef9764fa6ef4baaab1ac05
     }
     return new_state
 

@@ -205,5 +205,20 @@ class PolicyPDFLoader:
             return PolicyType.SUPPLY_POLICY
 
         # 기본값
-        
+        return PolicyType.UNKNOWN
+
+    def _extract_title(self, content: str, file_path: str) -> str:
+        """
+        문서의 제목을 추출합니다.
+        먼저 파일명에서 제목을 추출하고, 없으면 문서 내용에서 찾습니다.
+
+        Args:
+            content: 문서 내용
+            file_path: 파일 경로
+
+        Returns:
+            추출된 제목 문자열
+        """
+
+
     
