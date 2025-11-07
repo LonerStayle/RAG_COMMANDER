@@ -171,3 +171,11 @@ vector 가 보이면 OK
 ## 진섭 개인 노트북 문제 해결 커맨드 
 code --uninstall-extension ms-toolsai.jupyter
 code --install-extension ms-toolsai.jupyter  
+
+## 진섭 rag db 증발시 
+
+```docker exec -it rag_pg bash```
+```psql -U postgres```
+```CREATE DATABASE ragdb;```
+```docker exec -it rag_pg bash```
+```psql -U postgres -d ragdb -f age_populatation.sql```

@@ -146,7 +146,6 @@ from utils.llm import LLMProfile
 
 def collect_articles_result():
     articles = _collect_articles()
-    print(articles)
     llm = LLMProfile.dev_llm().invoke(
         f"""
         당신은 부동산 정책 뉴스를 JSON 목록으로 만든 것 중에 각 원소마다 데이터 형식은 똑같이 유지한채 

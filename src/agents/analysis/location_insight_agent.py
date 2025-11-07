@@ -7,8 +7,7 @@ from utils.util import get_today_str
 from utils.llm import LLMProfile
 from prompts import PromptManager, PromptType
 from langgraph.prebuilt import ToolNode
-
-
+from tools.context_to_csv import location_kakao_to_drive
 
 
 @tool(parse_docstring=False)
@@ -48,6 +47,9 @@ main_type_key = StartInput.KEY.main_type
 total_units_key = StartInput.KEY.total_units
 web_context_key = LocationInsightState.KEY.web_context
 kakao_api_distance_context_key = LocationInsightState.KEY.kakao_api_distance_context
+kakao_api_distance_download_link_key = (
+    LocationInsightState.KEY.kakao_api_distance_download_link
+)
 gemini_search_key = LocationInsightState.KEY.gemini_search
 perplexity_search_key = LocationInsightState.KEY.perplexity_search
 
@@ -102,7 +104,13 @@ def kakao_api_distance_tool(state: LocationInsightState) -> LocationInsightState
     target_area = start_input[target_area_key]
     # result = get_location_profile(target_area)
     result = get_location_profile.invoke({"address": target_area})
-    return {kakao_api_distance_context_key: result}
+
+    return {
+        kakao_api_distance_context_key: result,
+        kakao_api_distance_download_link_key: location_kakao_to_drive(
+            result, target_area
+        ),
+    }
 
 
 def analysis_setting(state: LocationInsightState) -> LocationInsightState:
@@ -141,6 +149,9 @@ def agent(state: LocationInsightState) -> LocationInsightState:
         "result": response.content,
         gemini_search_key: state[gemini_search_key],
         kakao_api_distance_context_key: state[kakao_api_distance_context_key],
+        kakao_api_distance_download_link_key: state[
+            kakao_api_distance_download_link_key
+        ],
     }
     return new_state
 

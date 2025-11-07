@@ -64,3 +64,200 @@ MAIN_START:
   input_variables:
     - "messages"
     - "date"
+
+
+MAIN_SOUCE_PAGE:
+ name: "MAIN_SOUCE_PAGE"
+ prompt: |  
+   --역할--
+   보고서에 사용되었던 데이터 출처 페이지 작성 전문가 입니다. 
+
+   --상황--
+   보고서 작성중입니다. 7개의 지표 전문가가 데이터를 가공해서 최종보고서 작성자에게 전달합니다.
+   최종보고서 작성자가 보고서를 작성한 후, 7개의 각 지표에서 사용되었던 원본 데이터 정리 및 출처를 적어야합니다.
+
+   --목표--
+   7개의 지표 전문가 각각 사용했던 데이터 내용 정리 및 출처를 달아주세요.
+   원본 사이트 링크와 다운로드 링크가 같이 제공되어야 합니다. 아래 내용을 보시고 정리해주세요
+
+   --**출력 형식**--
+   MarkDown 형식으로 맞춰주세요. 
+   원본 데이터 출처 및 다운로드 링크는 하이퍼링크로 클릭할 수 있게 해주세요.
+  
+   ------------------
+   <주택청약>
+   주택청약 내용:
+   [1. 주택 청약 FAQ]
+    원본 데이터 출처 (주택 청약 2024 FAQ): https://www.molit.go.kr/USR/policyData/m_34681/dtl.jsp?search=&srch_dept_nm=&srch_dept_id=&srch_usr_nm=&srch_usr_titl=Y&srch_usr_ctnt=&search_regdate_s=&search_regdate_e=&psize=10&s_category=&p_category=&lcmspage=1&id=4765
+    다운로드 링크: {housing_faq_download_link}
+    데이터 내용: 
+    {housing_faq_context}
+
+   [2. 주택공급 규칙] 
+    원본 데이터 출처 (주택 공급에 관한 규칙) :https://www.law.go.kr/%EB%B2%95%EB%A0%B9/%EC%A3%BC%ED%83%9D%EA%B3%B5%EA%B8%89%EC%97%90%EA%B4%80%ED%95%9C%EA%B7%9C%EC%B9%99
+    다운로드 링크: {housing_rule_download_link}
+    데이터 내용: 
+    {housing_rule_context}
+   </주택청약>
+
+   <입지분석>
+   [카카오 API 응용 계산] 
+    원본 데이터 출처 (카카오 개발자 센터) :https://developers.kakao.com/console/app/1330313/config
+    다운로드 링크: {location_download_link}
+    데이터 내용: 
+    {location_context}
+   </입지분석>
+
+   <주변 매매가비교>
+   [카카오 API 응용 계산] 
+    원본 데이터 출처 (카카오 개발자 센터) :https://developers.kakao.com/console/app/1330313/config
+    다운로드 링크: {nearby_download_link}
+    데이터 내용: 
+    {nearby_context}
+   </주변 매매가비교>
+
+   <정책>
+   [1. 국가적 정책]
+    원본 데이터 출처 (국토 교통부 - 주택토지) :https://www.molit.go.kr/USR/NEWS/m_71/lst.jsp?search_section=p_sec_2
+    다운로드 링크: {netional_download_link}
+    데이터 내용: 
+    {netional_news_context}
+   
+   [2. 지역적 정책]
+    원본 데이터 출처 (하우징포스트) :https://housing-post.com/List.aspx?CNO=11389
+    다운로드 링크: {region_download_link}
+    데이터 내용: 
+    {region_context}
+   </정책>
+
+   <미분양>
+   [미분양]
+    원본 데이터 출처 (국토 교통 - 통계누리) :https://stat.molit.go.kr/portal/cate/statView.do?hRsId=32&hFormId=5328
+    다운로드 링크: {unsold_unit_download_link}
+    데이터 내용: 
+    {unsold_unit}
+   </미분양>
+
+   <인구분석>
+    [1. 인구 이동 통계]
+     원본 데이터 출처 (국토 교통 - 통계누리) :https://kosis.kr/publication/publicationThema.do?pubcode=AD
+     다운로드 링크: {move_population_download_link}
+     데이터 내용: 
+     {move_population_context}
+
+    [2. 자치구별 연령층 분포]
+     원본 데이터 출처 (행정 안전부 - 연령별 인구현황) : https://jumin.mois.go.kr#  
+     다운로드 링크: {age_population_download_link}
+     데이터 내용: 
+     {age_population_context}              
+   </인구분석>
+
+   <공급과 수요>
+    [1. 주택 담보 금리]
+     원본 데이터 출처(kosis) :https://kosis.kr/visual/nsportalStats/detailContents.do;jsessionid=58cajYm2qMs8cLrj1qxoGuEevC4m5d1nnFxIcreEG1XcZa7NnlgBxeQtZ52xraNv.STAT_WAS2_servlet_engine4?statJipyoId=3656&listId=B&vStatJipyoId=5012#:~:text=%EC%B6%9C%EC%B2%98%20%3A%20%ED%95%9C%EA%B5%AD%EC%9D%80%ED%96%89%2C%20%ED%86%B5%ED%99%94%EA%B8%88%EC%9C%B5%ED%86%B5%EA%B3%84%2C%20%E3%80%8C%EC%98%88%EA%B8%88%EC%9D%80%ED%96%89,%EC%8B%A0%EA%B7%9C%EC%B7%A8%EA%B8%89%EC%95%A1%20%EA%B8%B0%EC%A4%80%29%E3%80%8D
+     다운로드 링크: {move_population_download_link}
+     데이터 내용: 
+     {home_mortgage}
+
+    [2. 한국 및 미국 금리]
+     원본 데이터 출처 1. (한은) :https://ecos.bok.or.kr/api/#/DevGuide/StatisticalCodeSearch
+     원본 데이터 출처 2. (FRED) :https://fred.stlouisfed.org/docs/api/fred/series_observations.html
+
+     다운로드 링크: {use_kor_rate_download_link}
+     데이터 내용: 
+     {use_kor_rate}
+
+    [3. 한국 1인당 GDP and 1인당 GRDP]
+     원본 데이터 출처 1. (지표누리) : https://www.index.go.kr/unity/potal/main/EachDtlPageDetail.do?idx_cd=2736#:~:text=%EC%B5%9C%EA%B7%BC%20%EA%B0%B1%EC%8B%A0%EC%9D%BC%20%3A%20%C2%A0%202025,15
+     원본 데이터 출처 2. (서울 열린 데이터광장) : https://data.seoul.go.kr/dataList/DT201012D040032/S/2/datasetView.do
+     다운로드 링크: {one_people_gdp_grdp_download_link}
+     데이터 내용: 
+     (한국 gdp) {one_people_gdp}
+     (grdp) {one_people_grdp}
+
+    [4. 입주 예정 물량]
+     원본 데이터 출처 (공공데이터) :https://www.data.go.kr/data/15111714/fileData.do     
+     다운로드 링크: {planning_move_download_link}
+     데이터 내용: 
+     {planning_move}
+
+    [5. 행정구역별 매매거래량]
+     원본 데이터 출처 (kosis) : https://kosis.kr/statHtml/statHtml.do?sso=ok&returnurl=https%3A%2F%2Fkosis.kr%3A443%2FstatHtml%2FstatHtml.do%3Flist_id%3D408_31503_006%26obj_var_id%3D%26seqNo%3D%26query%3DDT_408_2006_S0058%26tblId%3DDT_408_2006_S0058%26vw_cd%3DMT_ZTITLE%26language%3Dkor%26orgId%3D408%26conn_path%3DMT_ZTITLE%26itm_id%3D%26lang_mode%3Dko%26
+     다운로드 링크: {housing_sales_volume_download_link}
+     데이터 내용: 
+     {housing_sales_volume}
+
+    [6. 월평균 전세 가격]
+     원본 데이터 출처 (국토 교통 - 통계누리) : https://www.reb.or.kr/r-one/portal/stat/easyStatPage/A_2024_00064.do?isMobileYn=N
+     다운로드 링크: {jeonse_price_download_link}
+     데이터 내용: 
+     {jeonse_price}
+
+    [7. 월평균 매매가격]
+     원본 데이터 출처 (국토 교통 - 통계누리) :https://www.reb.or.kr/r-one/portal/stat/easyStatPage/A_2024_00064.do?isMobileYn=N
+     다운로드 링크: {sale_price_download_link}
+     데이터 내용: 
+     {sale_price}                                           
+
+    [8. 주택 10년 이상 노후도, 매매수급지수 등 기타]
+     원본 데이터 출처 1.(10년 이상 노후도 - sgis) : https://sgis.kostat.go.kr/developer/html/openApi/api/data.html
+     원본 데이터 출처 2.(매매수급지수 - 공공데이터) : https://www.data.go.kr/data/15044273/fileData.do
+     다운로르 링크: 없음
+     데이터 내용:
+     노후도: {year10_after_house}
+     매매수급지수: {trade_balance}
+
+   </공급과 수요>
+
+ input_variables:
+    - housing_faq_context
+    - housing_faq_download_link
+
+    - housing_rule_context
+    - housing_rule_download_link
+
+    - location_context
+    - location_download_link
+
+    - nearby_context
+    - nearby_download_link
+    
+    - netional_news_context
+    - netional_download_link
+
+    - region_context
+    - region_download_link
+
+    - unsold_unit
+    - unsold_unit_download_link
+
+    - move_population_context
+    - move_population_download_link
+
+    - age_population_context
+    - age_population_download_link
+
+    - home_mortgage
+    - home_mortgage_download_link
+
+    - use_kor_rate
+    - use_kor_rate_download_link
+
+    - one_people_gdp
+    - one_people_grdp
+    - one_people_gdp_grdp_download_link
+
+    - planning_move
+    - planning_move_download_link
+
+    - housing_sales_volume
+    - housing_sales_volume_download_link
+
+    - jeonse_price
+    - jeonse_price_download_link
+
+    - sale_price
+    - sale_price_download_link
+
+    - year10_after_house
+    - trade_balance

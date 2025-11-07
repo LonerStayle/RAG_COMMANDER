@@ -8,6 +8,7 @@ from utils.llm import LLMProfile
 from prompts import PromptManager, PromptType
 from langgraph.prebuilt import ToolNode
 from tools.kostat_api import get_move_population
+from tools.context_to_csv import age_population_to_drive,move_population_to_drive
 
 @tool(parse_docstring=False)
 def think_tool(reflection: str) -> str:
@@ -42,6 +43,8 @@ output_key = PopulationInsightState.KEY.population_insight_output
 start_input_key = PopulationInsightState.KEY.start_input
 age_population_context_key = PopulationInsightState.KEY.age_population_context
 move_population_context_key = PopulationInsightState.KEY.move_population_context
+age_population_download_link_key = PopulationInsightState.KEY.age_population_download_link
+move_population_download_link_key = PopulationInsightState.KEY.move_population_download_link
 messages_key = PopulationInsightState.KEY.messages
 target_area_key = StartInput.KEY.target_area
 
@@ -59,19 +62,18 @@ def age_population(state: PopulationInsightState) -> PopulationInsightState:
     start_input = state[start_input_key] 
     target_area = start_input[target_area_key]
     docs = age_population_retrieve(target_area)
-    print("연령층 분포",docs)
     return {
-        age_population_context_key: docs
+        age_population_context_key: docs,
+        age_population_download_link_key: age_population_to_drive(docs,target_area),
     }
 
 def move_population(state: PopulationInsightState) -> PopulationInsightState: 
-    
     start_input = state[start_input_key] 
     target_area = start_input[target_area_key]
     docs = get_move_population(target_area)
-    print("인구 이동",docs)
     return {
-        move_population_context_key: docs 
+        move_population_context_key: docs,
+        move_population_download_link_key: move_population_to_drive(docs,target_area),
     }
 
 
@@ -105,7 +107,9 @@ def agent(state: PopulationInsightState) -> PopulationInsightState:
     new_state[output_key] = {
         "result": response.content,
         age_population_context_key: state[age_population_context_key],
-        move_population_context_key: state[move_population_context_key]
+        move_population_context_key: state[move_population_context_key],
+        age_population_download_link_key: state[age_population_download_link_key],
+        move_population_download_link_key: state[move_population_download_link_key],
     }
     return new_state
 

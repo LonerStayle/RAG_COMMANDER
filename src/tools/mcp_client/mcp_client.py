@@ -35,7 +35,7 @@ def get_exa_config():
                 "/c",
                 "npx",
                 "-y",
-                "@smithery/cli@latest",
+                "@smithery/cli@0.1.8",
                 "run",
                 "exa",
                 "--key",
@@ -50,7 +50,7 @@ def get_exa_config():
             "command": "npx",
             "args": [
                 "-y",
-                "@smithery/cli@latest",
+                "@smithery/cli@0.1.8",
                 "run",
                 "exa",
                 "--key",
@@ -78,8 +78,15 @@ async def get_tools():
     if _tools is None:
         client = await get_client()
         try:
-            print("[MCP] Waiting up to 120s for tool manifest...")
-            _tools = await asyncio.wait_for(client.get_tools(), timeout=120)
+            print("[MCP] Waiting up to 180s for Smithery MCP manifest...")
+            _tools = await asyncio.wait_for(client.get_tools(), timeout=180)
+            print(f"[MCP] ✅ {len(_tools)} tools loaded successfully")
         except asyncio.TimeoutError:
-            raise RuntimeError("⚠️ Smithery MCP 서버가 120초 내 manifest를 반환하지 않았습니다.")
+            raise RuntimeError("⚠️ Smithery MCP 서버가 180초 내 manifest를 반환하지 않았습니다.")
+        except Exception as e:
+            print(f"❌ MCP 연결 실패 ({type(e).__name__}): {e}")
+            # MCP 내부 에러 메시지 추출용
+            import traceback
+            traceback.print_exc()
+            raise
     return _tools

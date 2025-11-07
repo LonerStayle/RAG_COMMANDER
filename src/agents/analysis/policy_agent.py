@@ -8,6 +8,7 @@ from prompts import PromptManager, PromptType
 from utils.util import get_today_str
 from agents.state.start_state import StartInput
 from langchain_core.messages import SystemMessage, HumanMessage
+from tools.context_to_csv import region_news_to_drive, netional_news_to_drive
 
 
 @tool(parse_docstring=False)
@@ -46,6 +47,8 @@ target_area_key = StartInput.KEY.target_area
 messages_key = PolicyState.KEY.messages
 national_context_key = PolicyState.KEY.national_context
 region_context_key = PolicyState.KEY.region_context
+national_download_link_key = PolicyState.KEY.national_download_link
+region_download_link_key = PolicyState.KEY.region_download_link
 
 llm = LLMProfile.analysis_llm()
 tool_list = [think_tool]
@@ -56,14 +59,28 @@ from tools.rag.retriever.national_policy_retriever import national_policy_retrie
 
 
 def national_news(state: PolicyState) -> PolicyState:
-    return {national_context_key: national_policy_retrieve()}
+    docs = national_policy_retrieve()
+    return {
+        national_context_key: docs,
+        national_download_link_key: netional_news_to_drive(docs),
+    }
+
 
 
 from tools.estate_web_crawling_tool import collect_articles_result
+<<<<<<< HEAD
 
 
 def region_news(state: PolicyState) -> PolicyState:
     return {region_context_key: collect_articles_result()}
+=======
+def region_news(state: PolicyState) -> PolicyState:
+    docs = collect_articles_result()
+    return {
+        region_context_key: docs,
+        region_download_link_key: region_news_to_drive(docs),
+    }
+>>>>>>> bdd1d3437ec47d94beef9764fa6ef4baaab1ac05
 
 
 def analysis_setting(state: PolicyState) -> PolicyState:
@@ -95,6 +112,12 @@ def agent(state: PolicyState) -> PolicyState:
         "result": response.content,
         national_context_key: state[national_context_key],
         region_context_key: state[region_context_key],
+<<<<<<< HEAD
+=======
+        
+        national_download_link_key:state[national_download_link_key],
+        region_download_link_key:state[region_download_link_key],
+>>>>>>> bdd1d3437ec47d94beef9764fa6ef4baaab1ac05
     }
     return new_state
 

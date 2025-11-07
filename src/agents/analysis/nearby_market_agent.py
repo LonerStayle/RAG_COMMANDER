@@ -9,6 +9,7 @@ from langchain_openai import ChatOpenAI
 from prompts import PromptManager, PromptType
 from langgraph.prebuilt import ToolNode
 import json
+from tools.context_to_csv import nearby_complexes_to_csv
 
 
 def extract_json_from_text(text: str) -> str:
@@ -87,6 +88,9 @@ target_area_key = StartInput.KEY.target_area
 main_type_key = StartInput.KEY.main_type
 total_units_key = StartInput.KEY.total_units
 kakao_api_distance_context_key = NearbyMarketState.KEY.kakao_api_distance_context
+kakao_api_distance_download_link_key = (
+    NearbyMarketState.KEY.kakao_api_distance_download_link
+)
 gemini_search_key = NearbyMarketState.KEY.gemini_search
 real_estate_price_context_key = NearbyMarketState.KEY.real_estate_price_context
 perplexity_search_key = NearbyMarketState.KEY.perplexity_search
@@ -98,7 +102,7 @@ from tools.perplexity_search_tool import perplexity_search
 from tools.real_time_sale_search_api_tool import get_real_estate_price
 
 llm = LLMProfile.analysis_llm()
-tool_list = [think_tool, perplexity_search,get_real_estate_price,get_location_profile]
+tool_list = [think_tool, perplexity_search, get_real_estate_price, get_location_profile]
 llm_with_tools = llm.bind_tools(tool_list)
 tool_node = ToolNode(tool_list)
 
@@ -162,6 +166,8 @@ def gemini_search_tool(state: NearbyMarketState) -> NearbyMarketState:
 
 # gemini_search_tool 의 주소를 받아서 입지 정보와 거리를 조회하고 결과를 반환하는 도구
 def kakao_api_distance_tool(state: NearbyMarketState) -> NearbyMarketState:
+    start_input = state[start_input_key]
+    target_area = start_input[target_area_key]
     gemini_result = state[gemini_search_key]
     json_text = extract_json_from_text(gemini_result)
 
@@ -194,7 +200,12 @@ def kakao_api_distance_tool(state: NearbyMarketState) -> NearbyMarketState:
         result["원본정보"] = apt
         all_result.append(result)
 
-    return {kakao_api_distance_context_key: all_result}
+    return {
+        kakao_api_distance_context_key: all_result,
+        kakao_api_distance_download_link_key: nearby_complexes_to_csv(
+            all_result, target_area
+        ),
+    }
 
 
 # gemini_search_tool 의 매매아파트 주소를 받아서 실거래가를 조회하고 결과를 반환하는 도구
@@ -248,7 +259,9 @@ def perplexity_search_tool(state: NearbyMarketState) -> NearbyMarketState:
         contract_condition = apt["계약조건"]
         contract_rate = apt["청약경쟁률"]
         contract_date = apt["청약일시"]
-        query_parts.append(f"{address}의 평당분양가격: {current_price}, 계약조건: {contract_condition}, 청약경쟁률: {contract_rate}, 청약일시: {contract_date}")
+        query_parts.append(
+            f"{address}의 평당분양가격: {current_price}, 계약조건: {contract_condition}, 청약경쟁률: {contract_rate}, 청약일시: {contract_date}"
+        )
 
     combined_query = f"""
     <CONTEXT>
@@ -329,7 +342,10 @@ def agent(state: NearbyMarketState) -> NearbyMarketState:
         gemini_search_key: state[gemini_search_key],
         kakao_api_distance_context_key: state[kakao_api_distance_context_key],
         real_estate_price_context_key: state[real_estate_price_context_key],
-        perplexity_search_key: state[perplexity_search_key],
+        perplexity_search_key: state[perplexity_search_key],        
+        kakao_api_distance_download_link_key: state[
+            kakao_api_distance_download_link_key
+        ],
     }
     return new_state
 

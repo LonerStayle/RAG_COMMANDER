@@ -24,8 +24,14 @@ class PromptType(Enum):
         str(Path(get_project_root()) / "src" / "prompts" / "main.yaml"),
         "메인 에이전트의 보고서 작성 시작 메시지",
     )
-
-    # ---1. <입지 분석>---
+    
+    MAIN_SOUCE_PAGE = (
+        "MAIN_SOUCE_PAGE",
+        str(Path(get_project_root()) / "src" / "prompts" / "main.yaml"),
+        "메인 에이전트의 보고서 출처페이지 생성",
+    )
+    
+    #---1. <입지 분석>---
     LOCATION_INSIGHT_SYSTEM = (
         "LOCATION_INSIGHT_SYSTEM",
         str(

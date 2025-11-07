@@ -12,6 +12,7 @@ class LocationInsightState(TypedDict):
     rag_context: Optional[str]
     web_context: Optional[str]
     kakao_api_distance_context: Optional[str]
+    kakao_api_distance_download_link: Optional[str]
     gemini_search: Optional[str]
     perplexity_search: Optional[str]
     messages: Annotated[list[AnyMessage], add_messages]
@@ -24,6 +25,8 @@ class PolicyState(TypedDict):
     policy_output: dict
     national_context: Optional[str]
     region_context: Optional[str]
+    national_download_link: Optional[str]
+    region_download_link: Optional[str]
     messages: Annotated[list[AnyMessage], add_messages]
     my_tool: str
 
@@ -34,6 +37,8 @@ class HousingFaqState(TypedDict):
     housing_faq_output: dict
     housing_faq_context: Optional[str]
     housing_rule_context: Optional[str]
+    housing_faq_download_link: Optional[str]
+    housing_rule_download_link: Optional[str]
     messages: Annotated[list[AnyMessage], add_messages]
 
 
@@ -42,6 +47,7 @@ class NearbyMarketState(TypedDict):
     start_input: dict
     nearby_market_output: dict
     kakao_api_distance_context: Optional[str]
+    kakao_api_distance_download_link: Optional[str]
     gemini_search: Optional[str]
     real_estate_price_context: Optional[str]
     perplexity_search: Optional[str]
@@ -55,7 +61,9 @@ class PopulationInsightState(TypedDict):
     start_input: dict
     population_insight_output: dict
     age_population_context: Optional[str]
+    age_population_download_link:Optional[str]
     move_population_context: Optional[str]
+    move_population_download_link:Optional[str]
     messages: Annotated[list[AnyMessage], add_messages]
 
 
@@ -65,16 +73,26 @@ class SupplyDemandState(TypedDict):
     supply_demand_output: dict
 
     year10_after_house: Optional[str]
+    year10_after_house_download_link:Optional[str]
     jeonse_price: Optional[str]
+    jeonse_price_download_link:Optional[str]
     sale_price: Optional[str]
+    sale_price_download_link:Optional[str]
     trade_balance: Optional[str]
+    trade_balance_download_link:Optional[str]
     use_kor_rate: Optional[str]
+    use_kor_rate_download_link:Optional[str]
     home_mortgage: Optional[str]
+    home_mortgage_download_link:Optional[str]
     one_people_gdp: Optional[str]
     one_people_grdp: Optional[str]
+    one_people_gdp_grdp_download_link:Optional[str]
     housing_sales_volume: Optional[str]
+    housing_sales_volume_download_link:Optional[str]
     planning_move: Optional[str]
+    planning_move_download_link:Optional[str]
     pre_pomise_competition: Optional[str]
+    pre_pomise_competition_download_link:Optional[str]
 
     messages: Annotated[list[AnyMessage], add_messages]
 
@@ -84,6 +102,7 @@ class UnsoldInsightState(TypedDict):
     start_input: dict
     unsold_insight_output: dict
     unsold_unit: Optional[str]
+    unsold_unit_download_link: Optional[str]
     messages: Annotated[list[AnyMessage], add_messages]
 
 
