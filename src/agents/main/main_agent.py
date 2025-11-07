@@ -3,8 +3,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from langgraph.graph.state import Command, Literal
+
 from agents.state.start_state import StartConfirmation, StartInput
 from agents.state.main_state import MainState
+from agents.state.analysis_state import (
+    HousingFaqState,
+    LocationInsightState,
+    PolicyState,
+    PopulationInsightState,
+    SupplyDemandState,
+    UnsoldInsightState,
+    NearbyMarketState,
+)
 from utils.llm import LLMProfile
 from utils.util import get_today_str
 from langchain_core.messages import HumanMessage, get_buffer_string, AIMessage
@@ -16,30 +26,60 @@ from agents.renderer.renderer_agent import renderer_graph
 from copy import deepcopy
 
 
+housing_faq_key = "housing_faq"
+location_insight_key = "location_insight"
+policy_output_key = "policy_output"
+supply_demand_key = "supply_demand"
+unsold_insight_key = "unsold_insight"
+population_insight_key = "population_insight"
+nearby_market_key = "nearby_market"
 
-# def start_confirmation(
-#     state: MainState,
-# ) -> Command[Literal["start", "__end__"]]:
-#     # gmail_authenticate()
-#     parser_llm = start_llm.with_structured_output(StartConfirmation)
+housing_faq_context_key = HousingFaqState.KEY.housing_faq_context
+housing_faq_download_link_key = HousingFaqState.KEY.housing_faq_download_link
+housing_rule_context_key = HousingFaqState.KEY.housing_rule_context
+housing_rule_download_link_key = HousingFaqState.KEY.housing_rule_download_link
 
-#     messages_str = get_buffer_string(messages=state[messages_key])
+location_kakao_api_distance_context_key = LocationInsightState.KEY.kakao_api_distance_context
+location_kakao_api_distance_download_link_key = (
+    LocationInsightState.KEY.kakao_api_distance_download_link
+)
 
-#     prompt = PromptManager(PromptType.MAIN_START_CONFIRMATION).get_prompt(
-#         messages=messages_str
-#     )
-#     response: StartConfirmation = parser_llm.invoke([HumanMessage(content=prompt)])
+nearby_kakao_api_distance_context_key = NearbyMarketState.KEY.kakao_api_distance_context
+nearby_kakao_api_distance_download_link_key = (NearbyMarketState.KEY.kakao_api_distance_download_link)
 
-#     if response.confirm == False:
-#         return Command(
-#             goto=END, update={messages_key: [AIMessage(content=response.question)]}
-#         )
-#     else:
-#         return Command(
-#             goto="start",
-#             update={messages_key: [AIMessage(content=response.verification)]},
-#         )
+national_context_key = PolicyState.KEY.national_context
+national_download_link_key = PolicyState.KEY.national_download_link
+region_context_key = PolicyState.KEY.region_context
+region_download_link_key = PolicyState.KEY.region_download_link
 
+unsold_unit_key = UnsoldInsightState.KEY.unsold_unit
+unsold_unit_download_link_key =UnsoldInsightState.KEY.unsold_unit_download_link
+
+move_population_context_key = PopulationInsightState.KEY.move_population_context
+move_population_download_link_key = PopulationInsightState.KEY.move_population_download_link
+age_population_context_key = PopulationInsightState.KEY.age_population_context
+age_population_download_link_key = PopulationInsightState.KEY.age_population_download_link
+
+home_mortgage_key = SupplyDemandState.KEY.home_mortgage
+home_mortgage_download_link_key = SupplyDemandState.KEY.home_mortgage_download_link
+use_kor_rate_key = SupplyDemandState.KEY.use_kor_rate
+use_kor_rate_download_link_key = SupplyDemandState.KEY.use_kor_rate_download_link
+one_people_gdp_key = SupplyDemandState.KEY.one_people_gdp
+one_people_grdp_key = SupplyDemandState.KEY.one_people_grdp
+one_people_gdp_grdp_download_link_key = SupplyDemandState.KEY.one_people_gdp_grdp_download_link
+planning_move_key = SupplyDemandState.KEY.planning_move
+planning_move_download_link_key = SupplyDemandState.KEY.planning_move_download_link
+housing_sales_volume_key = SupplyDemandState.KEY.housing_sales_volume
+housing_sales_volume_download_link_key = SupplyDemandState.KEY.housing_sales_volume_download_link
+jeonse_price_key = SupplyDemandState.KEY.jeonse_price
+jeonse_price_download_link_key = SupplyDemandState.KEY.jeonse_price_download_link
+pre_pomise_competition_key = SupplyDemandState.KEY.pre_pomise_competition
+pre_pomise_competition_download_link_key = SupplyDemandState.KEY.pre_pomise_competition_download_link
+sale_price_key = SupplyDemandState.KEY.sale_price
+sale_price_download_link_key = SupplyDemandState.KEY.sale_price_download_link
+
+year10_after_house_key = SupplyDemandState.KEY.year10_after_house
+trade_balance_key = SupplyDemandState.KEY.trade_balance
 
 start_llm = LLMProfile.chat_bot_llm()
 messages_key = MainState.KEY.messages
@@ -98,13 +138,7 @@ def jung_min_jae_graph(state: MainState) -> MainState:
 from tools.send_gmail import gmail_authenticate
 from tools.send_gmail import send_gmail
 
-housing_faq_key = "housing_faq"
-location_insight_key = "location_insight"
-policy_output_key = "policy_output"
-supply_demand_key = "supply_demand"
-unsold_insight_key = "unsold_insight"
-population_insight_key = "population_insight"
-nearby_market_key = "nearby_market"
+
 def final_node(state: MainState) -> MainState:
     analysis_outputs = state[analysis_outputs_key]
     housing_faq = analysis_outputs[housing_faq_key]
@@ -114,84 +148,92 @@ def final_node(state: MainState) -> MainState:
     unsold_insight = analysis_outputs[unsold_insight_key]
     population_insight = analysis_outputs[population_insight_key]
     nearby_market = analysis_outputs[nearby_market_key]
-    
+
     prompt = PromptManager(PromptType.MAIN_SOUCE_PAGE).get_prompt(
-        housing_faq_context = housing_faq['housing_faq_context'],
-        housing_faq_download_link = housing_faq['housing_faq_download_link'],
+        #청약 정리
+        housing_faq_context=housing_faq[housing_faq_context_key],
+        housing_faq_download_link=housing_faq[housing_faq_download_link_key],
+        housing_rule_context=housing_faq[housing_rule_context_key],
+        housing_rule_download_link=housing_faq[housing_rule_download_link_key],
         
-        housing_rule_context = housing_faq['housing_rule_context'],
-        housing_rule_download_link = housing_faq['housing_rule_download_link'],
+        #입지분석
+        location_context=location_insight[location_kakao_api_distance_context_key],
+        location_download_link=location_insight[location_kakao_api_distance_download_link_key],
         
-        location_context = location_insight['kakao_api_distance_context'],
-        location_download_link = location_insight['kakao_api_distance_download_link'],
+        #매매가 비교
+        nearby_context=nearby_market[nearby_kakao_api_distance_context_key],
+        nearby_download_link=nearby_market[nearby_kakao_api_distance_download_link_key],
         
-        nearby_context = nearby_market['kakao_api_distance_context'],
-        nearby_download_link = nearby_market['kakao_api_distance_download_link'],
+        #정책
+        national_news_context=policy_output[national_context_key],
+        national_download_link=policy_output[national_download_link_key],
+        region_context=policy_output[region_context_key],
+        region_download_link=policy_output[region_download_link_key],
         
-        netional_news_context = policy_output['national_context'],
-        netional_download_link = policy_output['national_download_link'],
+        #미분양
+        unsold_unit=unsold_insight[unsold_unit_key],
+        unsold_unit_download_link=unsold_insight[unsold_unit_download_link_key],
         
-        region_context = policy_output['region_context'],
-        region_download_link = policy_output['region_download_link'],
+        #인구분석
+        move_population_context=population_insight[move_population_context_key],
+        move_population_download_link=population_insight[
+            move_population_download_link_key
+        ],
+        age_population_context=population_insight[age_population_context_key],
+        age_population_download_link=population_insight[age_population_download_link_key],
         
-        unsold_unit = unsold_insight['unsold_unit'],
-        unsold_unit_download_link = unsold_insight['unsold_unit_download_link'],
+        #공급과 수요
+        home_mortgage=supply_demand[home_mortgage_key],
+        home_mortgage_download_link=supply_demand[home_mortgage_download_link_key],
         
-        move_population_context = population_insight['move_population_context'],
-        move_population_download_link = population_insight['move_population_download_link'],
+        use_kor_rate=supply_demand[use_kor_rate_key],
+        use_kor_rate_download_link=supply_demand[use_kor_rate_download_link_key],
         
-        age_population_context = population_insight['age_population_context'],
-        age_population_download_link = population_insight['age_population_download_link'],
+        one_people_gdp=supply_demand[one_people_gdp_key],
+        one_people_grdp=supply_demand[one_people_grdp_key],
+        one_people_gdp_grdp_download_link=supply_demand[
+            one_people_gdp_grdp_download_link_key
+        ],
         
-        home_mortgage = supply_demand['home_mortgage'],
-        home_mortgage_download_link = supply_demand['home_mortgage_download_link'],
+        planning_move=supply_demand[planning_move_key],
+        planning_move_download_link=supply_demand[planning_move_download_link_key],
         
-        use_kor_rate = supply_demand['use_kor_rate'],
-        use_kor_rate_download_link = supply_demand['use_kor_rate_download_link'],
+        housing_sales_volume=supply_demand[housing_sales_volume_key],
+        housing_sales_volume_download_link=supply_demand[housing_sales_volume_download_link_key],
         
-        one_people_gdp = supply_demand['one_people_gdp'],
-        one_people_grdp = supply_demand['one_people_grdp'],
-        one_people_gdp_grdp_download_link = supply_demand['one_people_gdp_grdp_download_link'],
+        jeonse_price=supply_demand[jeonse_price_key],
+        jeonse_price_download_link=supply_demand[jeonse_price_download_link_key],
         
-        planning_move = supply_demand['planning_move'],
-        planning_move_download_link = supply_demand['planning_move_download_link'],
+        pre_pomise_competition=supply_demand[pre_pomise_competition_key],
+        pre_pomise_competition_download_link=supply_demand[
+            pre_pomise_competition_download_link_key
+        ],
         
-        housing_sales_volume = supply_demand['housing_sales_volume'],
-        housing_sales_volume_download_link = supply_demand['housing_sales_volume_download_link'],
+        sale_price=supply_demand[sale_price_key],
+        sale_price_download_link=supply_demand[sale_price_download_link_key],
         
-        jeonse_price = supply_demand['jeonse_price'],
-        jeonse_price_download_link = supply_demand['jeonse_price_download_link'],
-        
-                
-        sale_price = supply_demand['sale_price'],
-        sale_price_download_link = supply_demand['sale_price_download_link'],
-        
-        year10_after_house = supply_demand['year10_after_house'],
-        trade_balance = supply_demand['trade_balance']
+        year10_after_house=supply_demand[year10_after_house_key],
+        trade_balance=supply_demand[trade_balance_key],
     )
-        
+
     res = LLMProfile.dev_llm().invoke(prompt)
     email = state[start_input_key][email_key]
     final_report = state[final_report_key]
-    
-    
+
     gmail_authenticate()
     send_gmail(
         md_content=final_report,
         to=email,
-        title="보고서 테스트 - 보고서 작성",        
+        title="보고서 테스트 - 보고서 작성",
     )
 
     send_gmail(
         md_content=res.content,
         to=email,
-        title="보고서 테스트 - 출처 페이지",        
+        title="보고서 테스트 - 출처 페이지",
     )
-    
-    return {
-        'source':res.content
-    }
-    
+
+    return {"source": res.content}
 
 
 graph_builder = StateGraph(MainState)
@@ -205,7 +247,7 @@ final_key = "final"
 graph_builder.add_node(start_key, start)
 graph_builder.add_node(analysis_graph_key, analysis_graph_node)
 graph_builder.add_node(jung_min_jae_key, jung_min_jae_graph)
-graph_builder.add_node(final_key,final_node)
+graph_builder.add_node(final_key, final_node)
 
 graph_builder.add_edge(START, start_key)
 graph_builder.add_edge(start_key, analysis_graph_key)

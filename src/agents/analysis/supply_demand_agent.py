@@ -118,14 +118,13 @@ from tools.pre_promise_competition_tool_v2 import pre_promise
 async def pre_pomise_competition(state: SupplyDemandState) -> SupplyDemandState:
     start_input = state[start_input_key]
     target_area = start_input[target_area_key]
-    # result = await pre_promise(target_area)
+    result = await pre_promise(target_area)
 
     return {
-        pre_pomise_competition_key: "",
-        # pre_pomise_competition_key: result,
-        # sale_price_download_link_key: pre_promise_competition_to_csv(
-        #     result, target_area
-        # ),
+        pre_pomise_competition_key: result,
+        pre_pomise_competition_download_link_key: pre_promise_competition_to_csv(
+            result, target_area
+        ),
     }
 
 
@@ -339,8 +338,7 @@ def agent(state: SupplyDemandState) -> SupplyDemandState:
         one_people_gdp_grdp_download_link_key: state[one_people_gdp_grdp_download_link_key],
         housing_sales_volume_download_link_key: state[housing_sales_volume_download_link_key],
         planning_move_download_link_key: state[planning_move_download_link_key],
-        # pre_pomise_competition_download_link_key: state[pre_pomise_competition_download_link_key],
-        
+        pre_pomise_competition_download_link_key: state[pre_pomise_competition_download_link_key],        
     }
     return new_state
 

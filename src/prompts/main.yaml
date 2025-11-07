@@ -1,51 +1,3 @@
-MAIN_START_CONFIRMATION:
-  name: "MAIN_START_CONFIRMATION"
-  prompt: |
-   아래는 지금까지 사용자가 부동산 대행사 사내용 보고서 작성을 요청하며 주고 받은 메시지 입니다. 
-   <Messages>
-   {messages}
-   </Messages>
-   
-   사용자가 제공한 정보만으로 보고서 작성을 시작할 수 있는지,
-   아니면 추가로 질문을 해야 하는지 판단해야 합니다.
-
-   보고서 작성 여부는 아래와 같습니다.
-   1. target_area(주소만 정제), 
-   2. main_type(단지의 대표 타입 or 타입별 세대수 중 1가지 ex:예시: 84제곱미터 or 84m² or {'59㎡': 300, '84㎡': 700}),
-   3. total_units(세대수 예시: 1000세대 or 1000) 
-   위 3개중 1가지라도 없다면 필수로 명확하기 위한 질문을 해야합니다. 
-
-   중요: 만약 이미 명확히 하기 위한 질문을 한적이 없다면,
-   다시 질문하지마세요. 정말 필요할 떄만 새로 질문을 하세요. 
-
-   다음과 같은 JSON 형식으로 응답해야 합니다:
-   "confirm": boolean, 
-   "question": "<사용자에게 명확하기 위한 질문>",
-   "reason": "<사용자에게 명확하기 위한 질문이 필요한 이유>"
-   "verification": "<충분한 정보가 있을 때 보고서 작성 시작을 알리는 메시지>"
-
-   명확하기 위한 질문이 필요한 경우:
-   "confirm": False, 
-   "question": "<당신의 질문>",
-   "reason": "<사용자에게 명확하기 위한 질문이 필요한 이유>"
-   "verification": ""
-
-
-   명확하기 위한 질문이 **필요하지 않은 경우*:
-   "confirm": True, 
-   "question": "",
-   "reason": ""
-   "verification": "<보고서 작성을 시작하겠다는 확인 메시지>"
-
-   verfication 메시지 작성 규칙:
-   - 충분한 정보를 확보했음을 인정하고
-   - 사용자의 요청에서 파악한 핵심 사항을 간단히 요약하며
-   - 이제 보고서 작성을 시작하겠다고 확언하세요.
-   - 전문적이고 간결하게 작성하세요.
-
-  input_variables:
-    - "messages"
-
 MAIN_START:
   name: "MAIN_START"
   prompt: |
@@ -119,9 +71,9 @@ MAIN_SOUCE_PAGE:
    <정책>
    [1. 국가적 정책]
     원본 데이터 출처 (국토 교통부 - 주택토지) :https://www.molit.go.kr/USR/NEWS/m_71/lst.jsp?search_section=p_sec_2
-    다운로드 링크: {netional_download_link}
+    다운로드 링크: {national_download_link}
     데이터 내용: 
-    {netional_news_context}
+    {national_news_context}
    
    [2. 지역적 정책]
     원본 데이터 출처 (하우징포스트) :https://housing-post.com/List.aspx?CNO=11389
@@ -197,13 +149,19 @@ MAIN_SOUCE_PAGE:
      원본 데이터 출처 (국토 교통 - 통계누리) :https://www.reb.or.kr/r-one/portal/stat/easyStatPage/A_2024_00064.do?isMobileYn=N
      다운로드 링크: {sale_price_download_link}
      데이터 내용: 
-     {sale_price}                                           
+     {sale_price}
 
-    [8. 주택 10년 이상 노후도, 매매수급지수 등 기타]
+    [8. 청약 경쟁률]                                           
+     원본 데이터 출처 (공공 데이터) :https://www.data.go.kr/data/15101048/fileData.do#tab-layer-openapi
+     다운로드 링크: {pre_pomise_competition_download_link}
+     데이터 내용: 
+     {pre_pomise_competition}
+
+    [9. 주택 10년 이상 노후도, 매매수급지수 등 기타]
      원본 데이터 출처 1.(10년 이상 노후도 - sgis) : https://sgis.kostat.go.kr/developer/html/openApi/api/data.html
      원본 데이터 출처 2.(매매수급지수 - 공공데이터) : https://www.data.go.kr/data/15044273/fileData.do
      다운로르 링크: 없음
-     데이터 내용(다운로드 없으니 아래 내용을 보여줄 것):
+     데이터 내용:
      노후도: {year10_after_house}
      매매수급지수: {trade_balance}
 
@@ -222,8 +180,8 @@ MAIN_SOUCE_PAGE:
     - nearby_context
     - nearby_download_link
     
-    - netional_news_context
-    - netional_download_link
+    - national_news_context
+    - national_download_link
 
     - region_context
     - region_download_link
@@ -258,6 +216,9 @@ MAIN_SOUCE_PAGE:
 
     - sale_price
     - sale_price_download_link
+
+    - pre_pomise_competition
+    - pre_pomise_competition_download_link
 
     - year10_after_house
     - trade_balance
