@@ -17,6 +17,7 @@ from tools.context_to_csv import region_news_to_drive, netional_news_to_drive
 from tools.estate_web_crawling_tool import collect_articles_result
 from tools.rag.retriever.policy_pdf_retriever import PolicyPDFRetriever
 from tools.rag.retriever.national_policy_retriever import national_policy_retrieve
+from tools.perplexity_search_tool import perplexity_search
 from utils.llm import LLMProfile
 from utils.util import get_today_str
 
@@ -36,7 +37,7 @@ def think_tool(reflection: str) -> str:
 
 
 llm = LLMProfile.analysis_llm()
-tool_list = [think_tool]
+tool_list = [think_tool, perplexity_search]
 llm_with_tools = llm.bind_tools(tool_list)
 tool_node = ToolNode(tool_list)
 evaluator_llm = llm.with_structured_output(ReportCheck)
@@ -154,7 +155,7 @@ def analysis_setting(state: PolicyState) -> PolicyState:
         region_news_context=state[region_context_key],
     )
 
-    # Segment 02: comp.md 스타일 정책 비교
+    # Segment 02: comp.md 스타일 정책 비교 (전체 구조 포함)
     segment_02_prompt = PromptManager(
         PromptType.POLICY_COMPARISON_SEGMENT_02
     ).get_prompt(
@@ -170,7 +171,7 @@ def analysis_setting(state: PolicyState) -> PolicyState:
         HumanMessage(content=segment_01_prompt),
         HumanMessage(content=segment_02_prompt),
     ]
-    record_reflection("프롬프트 준비", "시스템/휴먼 프롬프트 설정")
+    record_reflection("프롬프트 준비", "SEGMENT 01(뉴스) + SEGMENT 02(comp.md 전체)")
     return {
         messages_key: messages,
         "documents": state.get(pdf_context_key, []),
@@ -181,15 +182,6 @@ def analysis_setting(state: PolicyState) -> PolicyState:
             ),
             "segment_01": segment_01_prompt,
             "segment_02": segment_02_prompt,
-            "segment_03": PromptManager(
-                PromptType.POLICY_COMPARISON_SEGMENT_03
-            ).get_prompt(
-                policy_period=policy_period,
-                policy_count=policy_count,
-                policy_list=policy_list,
-                target_area=target_area_value,
-                pdf_context=state.get(pdf_context_key, ""),
-            ),
         },
         "iteration": 0,
     }
@@ -216,7 +208,7 @@ def generate_initial_report(state: PolicyState) -> PolicyState:
             "   - 나쁜 예: 'LTV 동일', '기존과 동일', '동일 (유지)'\n"
             "   - 좋은 예: '수도권 규제지역 LTV 40% (무주택·1주택 기준)'\n"
             "4. 출처 필수 명시: 각 표 항목과 내용마다 [출처: 파일명] 형식으로 출처 명시\n"
-            "5. PDF 없는 내용: 빈칸('-') 또는 mcp_perplexity-mcp_perplexity_search_web 도구로 검색 후 [출처: Perplexity - URL] 명시\n\n"
+            "5. PDF 없는 내용: 빈칸('-') 또는 perplexity_search 도구로 검색 후 [출처: Perplexity] 명시\n\n"
             "표는 간결하게 작성하고, 핵심 내용만 포함하세요. "
             "장황한 설명은 제거하고 사실만 기록하세요.\n"
             "policy_list에 명시된 정책들을 우선적으로 비교 분석하세요."
@@ -291,7 +283,7 @@ def decide_next_step(state: PolicyState) -> str:
     """
     check = state[
         "completeness_check"
-    ]  # 이전 단계에서 평가한 보고서 완성도 결과 가져옴옴
+    ]  # 이전 단계에서 평가한 보고서 완성도 결과 가져옴
     if check.is_complete:
         return "__end__"
     if (
@@ -335,7 +327,7 @@ def revise_report(state: PolicyState) -> PolicyState:
         "3. 애매한 표현 완전 금지: '동일', '유지', '기존 규제 유지', '변동 없음', '동일 적용' 등 절대 금지\n"
         "   - 반드시 구체적 내용으로 작성 (예: 수도권 규제지역 LTV 40%)\n"
         "4. 출처 명시: 모든 내용에 [출처: 파일명] 추가\n"
-        "5. PDF 없는 내용: 빈칸('-') 또는 mcp_perplexity-mcp_perplexity_search_web 도구로 검색 후 [출처: Perplexity - URL]\n\n"
+        "5. PDF 없는 내용: 빈칸('-') 또는 perplexity_search 도구로 검색 후 [출처: Perplexity]\n\n"
         f"[부족한 섹션]\n{check.missing_sections}\n\n"
         f"[필요한 정보]\n{check.missing_information}\n\n"
         f"[추가 자료]\n{docs}\n\n"
