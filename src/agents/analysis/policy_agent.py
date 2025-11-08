@@ -115,7 +115,7 @@ def policy_pdf_retrieve(state: PolicyState) -> PolicyState:
 
     # policy_count를 k 값으로 사용 (기본값 3)
     try:
-        k = int(policy_count.replace("개", "").strip()) if policy_count else 3
+        k = policy_count if policy_count else 3
     except ValueError:
         k = 3
 
