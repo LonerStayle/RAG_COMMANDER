@@ -24,7 +24,7 @@ from utils.util import get_today_str
 @tool(parse_docstring=True)
 def think_tool(reflection: str) -> str:
     """
-    각 노드가 끝날 때마다 메모를 남기는 도구
+    각 노드가 끝날 때마다 메모를 남기는 도구, 내부 반성·점검(Reflection)용
 
     Args:
         reflection: 중간 추론 내용(체크리스트, 검증사항, 계획 등)
@@ -67,18 +67,9 @@ def record_reflection(title: str, hint: str) -> None:
 
 
 # 1. 자료수집
-def nathional_news(state: PolicyState) -> PolicyState:
-    docs = national_policy_retrieve()
-    record_reflection("국가 뉴스 수집", "전국 정책 기사 정리")
-    return {
-        national_context_key: docs,
-        national_download_link_key: netional_news_to_drive(docs),
-    }
-
-
 def national_news(state: PolicyState) -> PolicyState:
     docs = national_policy_retrieve()
-    record_reflection("국가가 뉴스 수집", "전국 정책 기사 정리")
+    record_reflection("국가 뉴스 수집", "전국 정책 기사 정리")
     return {
         national_context_key: docs,
         national_download_link_key: netional_news_to_drive(docs),
@@ -102,14 +93,17 @@ def policy_pdf_retrieve(state: PolicyState) -> PolicyState:
     policy_list = start_input.get(StartInput.KEY.policy_list, "")
     target_area = start_input.get(StartInput.KEY.target_area, "")
 
-    # 검색 쿼리 구성
+    # 검색 쿼리 구성: policy_list가 있으면 우선 사용
     query_parts = []
+    if policy_list:
+        # policy_list가 있으면 이를 최우선으로 사용
+        query_parts.append(policy_list)
+        record_reflection("정책 리스트 우선", f"policy_list 사용: {policy_list}")
+    elif policy_period:
+        query_parts.append(policy_period)
+
     if target_area:
         query_parts.append(target_area)
-    if policy_period:
-        query_parts.append(policy_period)
-    if policy_list:
-        query_parts.append(policy_list)
 
     query = " ".join(query_parts) if query_parts else target_area or "정책"
 
@@ -119,49 +113,83 @@ def policy_pdf_retrieve(state: PolicyState) -> PolicyState:
     except ValueError:
         k = 3
 
-    docs = retriever.hybrid_search(query, k=k)
-    record_reflection("PDF 검색", "정책 PDF 주요 문단 확보")
+    docs = retriever.hybrid_search(query, k=k * 2)  # 더 많은 문서 검색
+    record_reflection("PDF 검색", f"정책 PDF 주요 문단 확보: {query}")
     return {pdf_context_key: docs}
 
 
 # 프롬프트 세팅
 def analysis_setting(state: PolicyState) -> PolicyState:
     start_input = state[start_input_key]
-    system_prompt = PromptManager(PromptType.POLICY_SYSTEM).get_prompt()
+    policy_period = start_input[StartInput.KEY.policy_period]
+    policy_count = start_input[StartInput.KEY.policy_count]
+    policy_list = start_input[StartInput.KEY.policy_list]
+    target_area_value = start_input[StartInput.KEY.target_area]
+
+    system_prompt = PromptManager(PromptType.POLICY_SYSTEM).get_prompt(
+        policy_period=policy_period,
+        policy_count=policy_count,
+        policy_list=policy_list,
+    )
     human_prompt = PromptManager(PromptType.POLICY_HUMAN).get_prompt(
-        target_area=start_input[StartInput.KEY.target_area],
+        target_area=target_area_value,
         date=get_today_str(),
         national_news_context=state[national_context_key],
         region_news_context=state[region_context_key],
-        policy_period=start_input[StartInput.KEY.policy_period],
-        policy_count=start_input[StartInput.KEY.policy_count],
-        policy_list=start_input[StartInput.KEY.policy_list],
+        policy_period=policy_period,
+        policy_count=policy_count,
+        policy_list=policy_list,
         main_type=start_input.get(StartInput.KEY.main_type, ""),
         total_units=start_input.get(StartInput.KEY.total_units, ""),
         pdf_context=state.get(pdf_context_key, ""),
     )
+    # Segment 01: 뉴스 정보만 제공
+    segment_01_prompt = PromptManager(
+        PromptType.POLICY_COMPARISON_SEGMENT_01
+    ).get_prompt(
+        target_area=target_area_value,
+        main_type=start_input.get(StartInput.KEY.main_type, ""),
+        total_units=start_input.get(StartInput.KEY.total_units, ""),
+        national_news_context=state[national_context_key],
+        region_news_context=state[region_context_key],
+    )
+
+    # Segment 02: comp.md 스타일 정책 비교
+    segment_02_prompt = PromptManager(
+        PromptType.POLICY_COMPARISON_SEGMENT_02
+    ).get_prompt(
+        policy_period=policy_period,
+        policy_count=policy_count,
+        policy_list=policy_list,
+        pdf_context=state.get(pdf_context_key, ""),
+    )
+
     messages = [
         SystemMessage(content=system_prompt),
         HumanMessage(content=human_prompt),
+        HumanMessage(content=segment_01_prompt),
+        HumanMessage(content=segment_02_prompt),
     ]
     record_reflection("프롬프트 준비", "시스템/휴먼 프롬프트 설정")
-    target_area_value = start_input[StartInput.KEY.target_area]
     return {
         messages_key: messages,
         "documents": state.get(pdf_context_key, []),
         "yaml_context": {
             "summary": PromptManager(PromptType.POLICY_COMPARISON_SUMMARY).get_prompt(
-                target_area=target_area_value
+                target_area=target_area_value,
+                pdf_context=state.get(pdf_context_key, ""),
             ),
-            "segment_01": PromptManager(
-                PromptType.POLICY_COMPARISON_SEGMENT_01
-            ).get_prompt(),
-            "segment_02": PromptManager(
-                PromptType.POLICY_COMPARISON_SEGMENT_02
-            ).get_prompt(),
+            "segment_01": segment_01_prompt,
+            "segment_02": segment_02_prompt,
             "segment_03": PromptManager(
                 PromptType.POLICY_COMPARISON_SEGMENT_03
-            ).get_prompt(target_area=target_area_value),
+            ).get_prompt(
+                policy_period=policy_period,
+                policy_count=policy_count,
+                policy_list=policy_list,
+                target_area=target_area_value,
+                pdf_context=state.get(pdf_context_key, ""),
+            ),
         },
         "iteration": 0,
     }
@@ -171,10 +199,33 @@ def analysis_setting(state: PolicyState) -> PolicyState:
 def generate_initial_report(state: PolicyState) -> PolicyState:
     """
     자료 기반 보고서 초안 작성
+    comp.md 스타일로 작성하도록 지시
     """
     messages = state[messages_key]
+
+    # comp.md 스타일로 작성하라는 추가 지시 추가
+    format_instruction = HumanMessage(
+        content=(
+            "\n\n**중요: 보고서는 반드시 SEGMENT 2의 구조를 정확히 따라 작성하세요:**\n"
+            "SEGMENT 1의 뉴스 정보를 참고하되, 보고서에는 포함하지 마세요.\n"
+            "SEGMENT 2의 comp.md 스타일 구조(개요 → 정책 목표 → 주요 정책 비교 10개 항목 → 주요 차이점 요약 → 평가 및 반응 → 전망 및 과제)를 정확히 따라 작성하세요.\n\n"
+            "**5가지 엄격한 규칙:**\n"
+            "1. 보고서 시작 금지: '※', '아래는', '주의사항' 등 메타 설명 절대 금지. 바로 '## **개요**'부터 시작\n"
+            "2. 할루시네이션 절대 금지: PDF에 명시된 정확한 수치만 사용. PDF에 없으면 빈칸('-') 또는 생략\n"
+            "3. 애매한 표현 완전 금지: '동일', '유지', '기존 규제 유지', '변동 없음', '동일 적용', '같음' 등 모든 애매한 표현 절대 금지\n"
+            "   - 나쁜 예: 'LTV 동일', '기존과 동일', '동일 (유지)'\n"
+            "   - 좋은 예: '수도권 규제지역 LTV 40% (무주택·1주택 기준)'\n"
+            "4. 출처 필수 명시: 각 표 항목과 내용마다 [출처: 파일명] 형식으로 출처 명시\n"
+            "5. PDF 없는 내용: 빈칸('-') 또는 mcp_perplexity-mcp_perplexity_search_web 도구로 검색 후 [출처: Perplexity - URL] 명시\n\n"
+            "표는 간결하게 작성하고, 핵심 내용만 포함하세요. "
+            "장황한 설명은 제거하고 사실만 기록하세요.\n"
+            "policy_list에 명시된 정책들을 우선적으로 비교 분석하세요."
+        )
+    )
+
+    messages_with_format = messages + [format_instruction]
     response = llm_with_tools.invoke(
-        messages
+        messages_with_format
     )  # LLM에 메시지를 전달하여 보고서 초안을 생성
     new_messages = messages + [response]
     record_reflection("초안 작성", "자료 기반 첫 보고서 작성")
@@ -187,19 +238,45 @@ def generate_initial_report(state: PolicyState) -> PolicyState:
 def evaluate_report_completeness(state: PolicyState) -> PolicyState:
     """
     보고서 완성도 평가
+    comp.md 스타일 구조를 기준으로 평가
     """
     draft = state["report_draft"]
     yaml_context = state.get("yaml_context", {})
+
+    # comp.md 스타일의 필수 구조 체크
+    required_structure = (
+        "SEGMENT 2의 comp.md 스타일 구조를 모두 포함해야 합니다:\n"
+        "1. 개요 (각 정책의 정식 명칭, 배경, 성격, 시행 시점, 출처)\n"
+        "2. 정책 목표 (각 정책별 목표)\n"
+        "3. 주요 정책 비교 (표 형식으로 10개 항목):\n"
+        "   - 1. 주택담보대출 한도\n"
+        "   - 2. 다주택자 규제\n"
+        "   - 3. 실거주 의무\n"
+        "   - 4. 생애최초 주택구입자 규제\n"
+        "   - 5. 규제지역 지정\n"
+        "   - 6. DSR(총부채원리금상환비율) 규제\n"
+        "   - 7. 전세대출 및 신용대출\n"
+        "   - 8. 가계대출 총량 관리\n"
+        "   - 9. 생활안정자금 목적 주담대\n"
+        "   - 10. 중도금 대출 규제\n"
+        "4. 주요 차이점 요약 (각 정책의 특징)\n"
+        "5. 평가 및 반응 (긍정적/부정적 평가, 출처)\n"
+        "6. 전망 및 과제 (단기 효과, 장기 과제)\n"
+        "7. 참고 자료 (각 정책 보도자료 링크)\n\n"
+        "**추가 체크사항:**\n"
+        "- '※', '아래는' 같은 메타 설명이 없는지 확인\n"
+        "- '동일', '유지', '기존 규제 유지', '변동 없음', '동일 적용' 같은 애매한 표현이 없는지 확인\n"
+        "- 모든 항목에 구체적인 수치와 내용이 있는지 확인\n"
+        "- 각 항목에 출처가 명시되어 있는지 확인\n"
+    )
+
     template = (
-        "=== Segment 01 Template ===\n"
-        f"{yaml_context.get('segment_01', '')}\n\n"
-        "=== Segment 02 Template ===\n"
+        required_structure + "=== Segment 02 (comp.md 스타일 전체 구조) ===\n"
         f"{yaml_context.get('segment_02', '')}\n\n"
-        "=== Segment 03 Template ===\n"
-        f"{yaml_context.get('segment_03', '')}"
     )
     prompt = (
-        "다음 *보고서 초안*이 *템플릿*을 모두 채웠는지 살펴보고, 부족한 항목과 검색어를 알려주세요.\n\n"
+        "다음 *보고서 초안*이 *SEGMENT 2의 comp.md 스타일 구조*를 모두 채웠는지 살펴보고, 부족한 항목과 검색어를 알려주세요.\n\n"
+        f"[필수 구조]\n{required_structure}\n\n"
         f"[템플릿]\n{template}\n\n"
         f"[보고서 초안]\n{draft}"
     )
@@ -250,10 +327,21 @@ def revise_report(state: PolicyState) -> PolicyState:
     docs = state["documents"]
     prompt = (
         "이전 초안과 부족했던 내용을 참고해 보고서를 보완해 주세요.\n\n"
+        "**중요: SEGMENT 2의 comp.md 스타일을 정확히 유지하세요.**\n"
+        "구조: 개요 → 정책 목표 → 주요 정책 비교 10개 항목(표 형식) → 주요 차이점 요약 → 평가 및 반응 → 전망 및 과제 → 참고 자료\n\n"
+        "**5가지 엄격한 규칙 준수:**\n"
+        "1. 메타 설명 절대 금지: '※', '아래는', '주의사항' 등 제거\n"
+        "2. 할루시네이션 금지: PDF의 정확한 수치만 사용. PDF 없으면 빈칸('-')\n"
+        "3. 애매한 표현 완전 금지: '동일', '유지', '기존 규제 유지', '변동 없음', '동일 적용' 등 절대 금지\n"
+        "   - 반드시 구체적 내용으로 작성 (예: 수도권 규제지역 LTV 40%)\n"
+        "4. 출처 명시: 모든 내용에 [출처: 파일명] 추가\n"
+        "5. PDF 없는 내용: 빈칸('-') 또는 mcp_perplexity-mcp_perplexity_search_web 도구로 검색 후 [출처: Perplexity - URL]\n\n"
         f"[부족한 섹션]\n{check.missing_sections}\n\n"
         f"[필요한 정보]\n{check.missing_information}\n\n"
         f"[추가 자료]\n{docs}\n\n"
-        f"[이전 초안]\n{draft}"
+        f"[이전 초안]\n{draft}\n\n"
+        "표는 간결하게 작성하고 핵심만 포함하세요.\n"
+        "policy_list에 명시된 정책들을 우선적으로 비교하세요."
     )
     reply = llm_with_tools.invoke([HumanMessage(content=prompt)])
     record_reflection("보고서 수정", "추가 자료 반영")
@@ -319,9 +407,9 @@ graph_builder.add_edge(policy_pdf_retrieve_key, analysis_setting_key)
 graph_builder.add_edge(analysis_setting_key, draft_key)
 graph_builder.add_edge(draft_key, evaluate_completeness_key)
 graph_builder.add_conditional_edges(
-    evaluate_completeness_key,  # 완성도 평가
-    decide_next_step,  # 완성 시 종료, 부족하면 재검색
-    [execute_retrieval_key, END],  # 보고서가 불완전 하면 자료 추가 검색색
+    evaluate_completeness_key,
+    decide_next_step,
+    [execute_retrieval_key, END],
 )
 
 graph_builder.add_edge(execute_retrieval_key, revise_report_key)
