@@ -4,7 +4,7 @@ load_dotenv()
 
 from langgraph.graph.state import Command, Literal
 
-from agents.state.start_state import StartConfirmation, StartInput
+from agents.state.start_state import StartInput
 from agents.state.main_state import MainState
 from agents.state.analysis_state import (
     HousingFaqState,
@@ -91,13 +91,7 @@ status_key = MainState.KEY.status
 
 
 def start(state: MainState) -> MainState:
-    parser_model = start_llm.with_structured_output(StartInput)
-    prompt = PromptManager(PromptType.MAIN_START).get_prompt(
-        messages=get_buffer_string(state[messages_key]), date=get_today_str()
-    )
-    response: StartInput = parser_model.invoke([HumanMessage(content=prompt)])
-    print("start_input", response)
-    return {start_input_key: response.model_dump(), status_key: "ANALYSIS"}
+    return {**state, status_key: "ANALYSIS"}
 
 
 async def analysis_graph_node(state: MainState) -> MainState:

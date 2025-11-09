@@ -1,4 +1,6 @@
 # 세팅 방식 - 궁금한거 언제든지 질문 주십쇼
+## 0. fastapi실행
+uvicorn src.fastapi.main_api:app --reload
 
 ## 1. 주요 패키지 설명
 
@@ -178,4 +180,7 @@ code --install-extension ms-toolsai.jupyter
 ```psql -U postgres```
 ```CREATE DATABASE ragdb;```
 ```docker exec -it rag_pg bash```
-```psql -U postgres -d ragdb -f age_populatation.sql```
+```psql -U postgres -d ragdb -f backup.sql```
+
+
+

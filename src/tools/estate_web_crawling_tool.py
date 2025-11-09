@@ -146,32 +146,62 @@ from utils.llm import LLMProfile
 
 def collect_articles_result():
     articles = _collect_articles()
+
+    # 빈 리스트 체크
+    if not articles:
+        print("경고: 수집된 기사가 없습니다.")
+        return []
+
     llm = LLMProfile.dev_llm().invoke(
         f"""
-        당신은 부동산 정책 뉴스를 JSON 목록으로 만든 것 중에 각 원소마다 데이터 형식은 똑같이 유지한채 
+        당신은 부동산 정책 뉴스를 JSON 목록으로 만든 것 중에 각 원소마다 데이터 형식은 똑같이 유지한채
         각 뉴스의 content 라고 적힌 키값의 내용을 변경해서 출력하는 역할을 맡고 있습니다.
 
         [목표]
-        JSON 목록을 유지한채 각 뉴스안의 content의 값을 수정하는 것입니다. 
+        JSON 목록을 유지한채 각 뉴스안의 content의 값을 수정하는 것입니다.
         - 정책만 이야기하도록 수정해주세요.
         - 불필요한 미래전망 예상이나 주관적인 내용은 제거해주시고 정책 내용만 남겨주세요
-        
+
         [추가 지침]
-        - title 키 데이터에 이상한 글 이있으면 title도 같이 수정 해주세요. 
+        - title 키 데이터에 이상한 글 이있으면 title도 같이 수정 해주세요.
             - 예시: '\u200b\u200b\' 와 같이 인코딩 안된것 같은 부분
-        
+
         [강력 지침]
         - *JSON형식으로만 답변*하세요
         - 절대 JSON 파일 외에 다른 말을 하지마세요
         - 인삿말 및 마지막말 같은걸 절대 하지마세요
+        - 응답은 반드시 유효한 JSON 배열로 시작해야 합니다 (예: [{{...}}])
 
         [JSON 파일]
         {articles}
         """
     )
-    result = json.loads(llm.content)
 
-    return result
+    # LLM 응답 검증
+    content = llm.content.strip()
+    if not content:
+        print("경고: LLM이 빈 응답을 반환했습니다. 원본 데이터를 반환합니다.")
+        return articles
+
+    # JSON 마크다운 코드 블록 제거 (```json ... ``` 형식)
+    if content.startswith("```"):
+        # ```json 또는 ``` 제거
+        lines = content.split("\n")
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines[-1].startswith("```"):
+            lines = lines[:-1]
+        content = "\n".join(lines).strip()
+
+    # JSON 파싱 시도
+    try:
+        result = json.loads(content)
+        return result
+    except json.JSONDecodeError as e:
+        print(f"JSON 파싱 에러: {e}")
+        print(f"LLM 응답 (처음 500자): {content[:500]}")
+        print("원본 데이터를 반환합니다.")
+        return articles
 
 
 # def build_output_path(base_dir=DATA_ROOT):

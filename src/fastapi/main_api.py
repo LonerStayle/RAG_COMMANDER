@@ -1,0 +1,38 @@
+from fastapi import FastAPI, HTTPException, Request
+from pydantic import BaseModel
+from typing import Optional, Union, Dict
+from contextlib import asynccontextmanager
+from fastapi.responses import JSONResponse
+
+from agents.main.main_agent import graph_builder
+from agents.state.start_state import StartInput
+
+# 그래프 한 번만 컴파일
+graph = graph_builder.compile()
+
+class GraphRequest(BaseModel):
+    start_input: StartInput
+
+class GraphResponse(BaseModel):
+    output: dict
+
+app = FastAPI(title="Service API")
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    # 원본 예외, 스택트레이스 등을 로깅
+    import traceback
+    tb = traceback.format_exc()
+    print(f"Unhandled error: {tb}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "error": str(exc)},
+    )
+
+@app.post("/invoke", response_model=GraphResponse)
+async def invoke_graph(request: GraphRequest):
+    try:
+        result = await graph.ainvoke({"start_input": request.start_input.model_dump()})
+        return GraphResponse(output=result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

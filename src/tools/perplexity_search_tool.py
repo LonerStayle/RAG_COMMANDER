@@ -20,12 +20,31 @@ def perplexity_search(query: str) -> str:
         query: 검색할 질문이나 프롬프트. 구체적이고 명확한 질문을 사용하세요.
 
     Returns:
-        str: Perplexity AI의 검색 결과 및 분석
+        str: Perplexity AI의 검색 결과 및 출처 링크
     """
     response = client.chat.completions.create(
-        model="sonar-reasoning-pro", messages=[{"role": "user", "content": query}]
+        model="sonar-reasoning-pro",
+        messages=[{"role": "user", "content": query}],
     )
-    return response.choices[0].message.content
+
+    # 답변 내용
+    content = response.choices[0].message.content
+
+    # 출처 링크 추출 (응답 객체에서 가능한 경우)
+    citations = []
+    if hasattr(response, "citations") and response.citations:
+        citations = response.citations
+
+    # 결과 포맷팅
+    result = content
+    if citations:
+        result += "\n\n[Perplexity 출처]"
+        for idx, citation in enumerate(citations, 1):
+            result += f"\n- {citation}"
+    else:
+        result += "\n\n[출처: Perplexity AI 검색]"
+
+    return result
 
 
 """

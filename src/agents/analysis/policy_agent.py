@@ -36,7 +36,7 @@ def think_tool(reflection: str) -> str:
     return f"Reflection recorded: {reflection}"
 
 
-llm = LLMProfile.analysis_llm()
+llm = LLMProfile.report_llm()
 tool_list = [think_tool, perplexity_search]
 llm_with_tools = llm.bind_tools(tool_list)
 tool_node = ToolNode(tool_list)
@@ -110,8 +110,8 @@ def policy_pdf_retrieve(state: PolicyState) -> PolicyState:
 
     # policy_count를 k 값으로 사용 (기본값 3)
     try:
-        k = int(policy_count.replace("개", "").strip()) if policy_count else 3
-    except ValueError:
+        k = int(policy_count) if policy_count else 3
+    except (ValueError, TypeError):
         k = 3
 
     docs = retriever.hybrid_search(query, k=k * 2)  # 더 많은 문서 검색
@@ -198,20 +198,30 @@ def generate_initial_report(state: PolicyState) -> PolicyState:
     # comp.md 스타일로 작성하라는 추가 지시 추가
     format_instruction = HumanMessage(
         content=(
-            "\n\n**중요: 보고서는 반드시 SEGMENT 2의 구조를 정확히 따라 작성하세요:**\n"
+            "\n\n**최우선 지시: 먼저 제공된 PDF 자료로 보고서를 작성하세요!**\n"
+            "PDF 정보로 최대한 작성하되, 정말 필요한 경우에만 perplexity_search 도구를 사용하세요.\n\n"
+            "**보고서는 반드시 SEGMENT 2의 구조를 정확히 따라 작성하세요:**\n"
             "SEGMENT 1의 뉴스 정보를 참고하되, 보고서에는 포함하지 마세요.\n"
             "SEGMENT 2의 comp.md 스타일 구조(개요 → 정책 목표 → 주요 정책 비교 10개 항목 → 주요 차이점 요약 → 평가 및 반응 → 전망 및 과제)를 정확히 따라 작성하세요.\n\n"
-            "**5가지 엄격한 규칙:**\n"
+            "**6가지 엄격한 규칙:**\n"
             "1. 보고서 시작 금지: '※', '아래는', '주의사항' 등 메타 설명 절대 금지. 바로 '## **개요**'부터 시작\n"
             "2. 할루시네이션 절대 금지: PDF에 명시된 정확한 수치만 사용. PDF에 없으면 빈칸('-') 또는 생략\n"
             "3. 애매한 표현 완전 금지: '동일', '유지', '기존 규제 유지', '변동 없음', '동일 적용', '같음' 등 모든 애매한 표현 절대 금지\n"
             "   - 나쁜 예: 'LTV 동일', '기존과 동일', '동일 (유지)'\n"
             "   - 좋은 예: '수도권 규제지역 LTV 40% (무주택·1주택 기준)'\n"
             "4. 출처 필수 명시: 각 표 항목과 내용마다 [출처: 파일명] 형식으로 출처 명시\n"
-            "5. PDF 없는 내용: 빈칸('-') 또는 perplexity_search 도구로 검색 후 [출처: Perplexity] 명시\n\n"
+            "5. PDF 없는 내용 처리 (선택적):\n"
+            "   - 빈칸('-')이 3개 이상이면 perplexity_search 도구 사용 고려\n"
+            "   - perplexity_search('구체적인 질문') 형태로 호출\n"
+            "   - Perplexity 결과 사용 시: '[출처: Perplexity - 링크]' 형식으로 명시\n"
+            "   - 예: perplexity_search('2025년 6월 27일 디딤돌 대출 일반 한도')\n"
+            "6. Perplexity 출처 표기:\n"
+            "   - Perplexity 답변에 포함된 링크를 반드시 함께 표기\n"
+            "   - 형식: [출처: Perplexity - https://example.com]\n\n"
             "표는 간결하게 작성하고, 핵심 내용만 포함하세요. "
             "장황한 설명은 제거하고 사실만 기록하세요.\n"
-            "policy_list에 명시된 정책들을 우선적으로 비교 분석하세요."
+            "policy_list에 명시된 정책들을 우선적으로 비교 분석하세요.\n\n"
+            "**지금 바로 보고서를 작성하세요 (## **개요**부터 시작):**"
         )
     )
 
@@ -358,12 +368,13 @@ def agent(state: PolicyState) -> PolicyState:
     return {output_key: output}
 
 
-# def router(state: PolicyState):
-#     messages = state[messages_key]
-#     last_ai_message = messages[-1]
-#     if last_ai_message.tool_calls:
-#         return "tools"
-#     return "__end__"
+def router(state: PolicyState) -> str:
+    """Tool 호출 여부에 따라 분기"""
+    messages = state[messages_key]
+    last_ai_message = messages[-1]
+    if hasattr(last_ai_message, 'tool_calls') and last_ai_message.tool_calls:
+        return "tools"
+    return "evaluate_completeness"
 
 
 national_news_key = "national_news"
@@ -397,7 +408,20 @@ graph_builder.add_edge(national_news_key, policy_pdf_retrieve_key)
 graph_builder.add_edge(region_news_key, policy_pdf_retrieve_key)
 graph_builder.add_edge(policy_pdf_retrieve_key, analysis_setting_key)
 graph_builder.add_edge(analysis_setting_key, draft_key)
-graph_builder.add_edge(draft_key, evaluate_completeness_key)
+
+# draft 노드에서 tool 호출 여부에 따라 분기
+graph_builder.add_conditional_edges(
+    draft_key,
+    router,
+    {
+        "tools": tools_key,
+        "evaluate_completeness": evaluate_completeness_key,
+    },
+)
+
+# tool 실행 후 다시 draft로
+graph_builder.add_edge(tools_key, draft_key)
+
 graph_builder.add_conditional_edges(
     evaluate_completeness_key,
     decide_next_step,
@@ -405,7 +429,17 @@ graph_builder.add_conditional_edges(
 )
 
 graph_builder.add_edge(execute_retrieval_key, revise_report_key)
-graph_builder.add_edge(revise_report_key, evaluate_completeness_key)
+
+# revise 노드에서도 tool 호출 가능
+graph_builder.add_conditional_edges(
+    revise_report_key,
+    router,
+    {
+        "tools": tools_key,
+        "evaluate_completeness": evaluate_completeness_key,
+    },
+)
+
 graph_builder.add_edge(evaluate_completeness_key, agent_key)
 
 policy_graph = graph_builder.compile()
