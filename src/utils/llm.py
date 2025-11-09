@@ -50,7 +50,7 @@ class LLMProfile(StrEnum):
     CHAT_BOT = ModelName.GPT_4_1.value
 
     # 분석용 LLM
-    ANALYSIS = ModelName.GEMINI_2_5_PRO.value
+    ANALYSIS = ModelName.GPT_4_1.value
 
     # 보고서 작성용 LLM
     REPORT = ModelName.GPT_5.value
@@ -82,23 +82,23 @@ class LLMProfile(StrEnum):
             temperature=0,
         )
 
-    # @staticmethod
-    # def analysis_llm():
-    #     return ChatOpenAI(
-    #         model=LLMProfile.ANALYSIS.value,
-    #         temperature=0,
-    #         # reasoning_effort="high", # minimal, low, medium, high
-    #         # verbosity="high",
-    #     )
     @staticmethod
     def analysis_llm():
-        return ChatGoogleGenerativeAI(
+        return ChatOpenAI(
             model=LLMProfile.ANALYSIS.value,
             temperature=0,
-            max_tokens=8192,  # Gemini 최대 출력 토큰
-            max_retries=0,  # max_retries를 0으로 설정하여 SDK 호환성 문제 방지
-            google_api_key=os.getenv("GEMINI_API_KEY"),  # 환경변수 미설정 시 직접 전달
+            # reasoning_effort="high", # minimal, low, medium, high
+            # verbosity="high",
         )
+    # @staticmethod
+    # def analysis_llm():
+    #     return ChatGoogleGenerativeAI(
+    #         model=LLMProfile.ANALYSIS.value,
+    #         temperature=0,
+    #         max_tokens=8192,  # Gemini 최대 출력 토큰
+    #         max_retries=0,  # max_retries를 0으로 설정하여 SDK 호환성 문제 방지
+    #         google_api_key=os.getenv("GEMINI_API_KEY"),  # 환경변수 미설정 시 직접 전달
+    #     )
 
     @staticmethod
     def report_llm():

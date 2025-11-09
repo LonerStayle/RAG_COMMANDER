@@ -70,7 +70,9 @@ def segment_directive(seg: int) -> str:
         return PromptManager(PromptType.JUNG_MIN_JAE_SEGMENT_01).get_prompt()
     if seg == 2:
         return PromptManager(PromptType.JUNG_MIN_JAE_SEGMENT_02).get_prompt()
-    return PromptManager(PromptType.JUNG_MIN_JAE_SEGMENT_03).get_prompt()
+    if seg == 3:
+        return PromptManager(PromptType.JUNG_MIN_JAE_SEGMENT_03).get_prompt()
+    return PromptManager(PromptType.JUNG_MIN_JAE_SEGMENT_04).get_prompt()
 
 
 def prev_segment_context(state: JungMinJaeState) -> str | None:
@@ -149,7 +151,7 @@ def agent(state: JungMinJaeState) -> JungMinJaeState:
     new_state = {**state}
     new_state[messages_key] = messages + [response]
     new_state[segment_buffers_key] = buffers
-    if seg <= 3:
+    if seg <= 4:
         new_state[segment_key] = seg + 1
     return new_state
 
@@ -162,6 +164,7 @@ def finalize_merge(state: JungMinJaeState) -> JungMinJaeState:
             buffers.get("seg1", ""),
             buffers.get("seg2", ""),
             buffers.get("seg3", ""),
+            buffers.get("seg4", ""),
         ]
     )
     merged = merged.replace("\n\n--\n\n", "\n\n---\n\n")  # 구분선 통일
@@ -231,10 +234,10 @@ def router(state: JungMinJaeState):
     """세그먼트 진행/병합/성찰 분기"""
     seg = state.get(segment_key, 1)
 
-    if seg <= 3:
+    if seg <= 4:
         return "reporting"
 
-    # seg == 4 (3 초과)
+    # seg == 5 (4 초과)
     if not state.get(final_report_key):
         return "finalize_merge"
 

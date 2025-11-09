@@ -36,7 +36,7 @@ def think_tool(reflection: str) -> str:
     return f"Reflection recorded: {reflection}"
 
 
-llm = LLMProfile.report_llm()
+llm = LLMProfile.analysis_llm()
 tool_list = [think_tool, perplexity_search]
 llm_with_tools = llm.bind_tools(tool_list)
 tool_node = ToolNode(tool_list)

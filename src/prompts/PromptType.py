@@ -72,12 +72,6 @@ class PromptType(Enum):
         str(Path(get_project_root()) / "src" / "prompts" / "analysis_policy.yaml"),
         "정책 분석 에이전트의 비교 분석 보고서 페이지 별 내용 02",
     )
-    
-    POLICY_COMPARISON_SEGMENT_03 = (
-        "POLICY_COMPARISON_SEGMENT_03",
-        str(Path(get_project_root()) / "src" / "prompts" / "analysis_policy.yaml"),
-        "정책 분석 에이전트의 비교 분석 보고서 페이지 별 내용 03",
-    )
 
     # ---3. 수급 분석 분석---
     SUPPLY_DEMAND_SYSTEM = (
@@ -206,6 +200,12 @@ class PromptType(Enum):
         "JUNG_MIN_JAE_SEGMENT_03",
         str(Path(get_project_root()) / "src" / "prompts" / "jung_min_jae.yaml"),
         "정민재 이사의 보고서 페이지 별 내용 03",
+    )
+
+    JUNG_MIN_JAE_SEGMENT_04 = (
+        "JUNG_MIN_JAE_SEGMENT_04",
+        str(Path(get_project_root()) / "src" / "prompts" / "jung_min_jae.yaml"),
+        "정민재 이사의 보고서 페이지 별 내용 04",
     )
 
     # ---8. 렌더링 ---
