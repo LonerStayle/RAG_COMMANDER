@@ -51,6 +51,7 @@ dependencies = [
     "torch>=2.9.0",
     "transformers>=4.57.1",
     "unstructured>=0.18.15",
+    "weasyprint>=66.0",
     "xhtml2pdf>=0.2.17",
 ]
 

@@ -2,6 +2,9 @@ import re, json
 import pandas as pd
 from utils.llm import LLMProfile
 from utils.google_drive_uploader import upload_to_drive
+from utils.util import get_data_dir
+
+get_data_dir() / "temp"
 
 # -------<01. 주택 청약 START>---------
 # ['housing_faq']['housing_faq_context']
@@ -16,8 +19,9 @@ def housing_faq_context_to_drive(data_list):
             a_clean = a.strip().replace('\\"', '"').replace("\\\\n", "\n")
             rows.append({"질문": q_clean, "답변": a_clean})
 
-    df = pd.DataFrame(rows)
 
+    df = pd.DataFrame(rows)
+    df.to_csv("주택청약FAQ_temp.csv", index=False, encoding="utf-8-sig")
     link = upload_to_drive(data=df, filename="주택청약FAQ_temp.csv", mime_type="text/csv")
     print("📎 주택청약FAQ_temp.csv 링크:", link)
     return link
