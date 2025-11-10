@@ -46,6 +46,26 @@ def gmail_authenticate():
 
     return creds
 
+def _strip_outer_fence(md: str) -> str:
+    """
+    ```...``` 로 전체가 둘러싸여 있으면 그 껍데기만 벗겨줌.
+    ```markdown 로 시작해도 잘라줌.
+    """
+    text = md.strip()
+
+    # 맨 앞 라인
+    if text.startswith("```"):
+        lines = text.splitlines()
+        # 첫 줄은 ``` 또는 ```markdown 같은 거니까 버림
+        first = lines[0].strip()
+        # 마지막 줄이 ``` 이면 그것도 버림
+        if lines[-1].strip() == "```":
+            lines = lines[1:-1]
+        else:
+            lines = lines[1:]
+        text = "\n".join(lines).strip()
+
+    return text
 
 # -------------------------------------------------
 # Markdown → PDF 변환 (WeasyPrint 버전)
@@ -215,8 +235,8 @@ def send_gmail(
     service = build("gmail", "v1", credentials=creds)
 
     # ✅ Markdown → PDF 변환
-    final_pdf_path = markdown_to_pdf(md_content_final, "최종보고서.pdf")
-    source_pdf_path = markdown_to_pdf(md_content_source, "데이터출처모음.pdf")
+    final_pdf_path = markdown_to_pdf(_strip_outer_fence(md_content_final), f"{title}_최종보고서.pdf")
+    source_pdf_path = markdown_to_pdf(_strip_outer_fence(md_content_source), f"{title}__데이터출처모음.pdf")
 
     # ✅ PDF를 Google Drive에 업로드
     final_link = upload_to_drive(final_pdf_path)
@@ -266,86 +286,3 @@ def send_gmail(
 
     sent = service.users().messages().send(userId="me", body=body).execute()
     print(f"✅ 메일 전송 완료 → {to} (ID: {sent['id']})")
-# -------------------------------------------------
-# 통합 send_gmail (Markdown 2개 → PDF 첨부)
-# -------------------------------------------------
-# def send_gmail(
-#     to: str,
-#     title: str,
-#     md_content_final: str,
-#     md_content_source: str,
-#     drive_links: dict[str, str] | None = None,
-# ):
-#     """
-#     Markdown 2개를 PDF로 변환 후 첨부하고,
-#     구글 드라이브 링크들을 본문 하단에 자동 나열.
-#     """
-#     creds = gmail_authenticate()
-#     service = build("gmail", "v1", credentials=creds)
-
-#     # Markdown → PDF 변환
-#     final_pdf_path = markdown_to_pdf(md_content_final, "최종보고서.pdf")
-#     source_pdf_path = markdown_to_pdf(md_content_source, "데이터출처모음.pdf")
-
-#     # 🔗 Google Drive 링크 HTML 섹션 구성
-#     drive_links_html = ""
-#     if drive_links:
-#         drive_links_html = "<hr/><h4>📂 데이터 다운로드 링크</h4><ul>"
-#         for name, link in drive_links.items():
-#             drive_links_html += f'<li><a href="{link}" target="_blank">{name}</a></li>'
-#         drive_links_html += "</ul>"
-
-#     # 메일 본문 HTML 구성
-#     html_body = f"""
-#     <html>
-#       <body style="font-family:'Noto Sans KR',Arial,sans-serif;line-height:1.6;color:#222;">
-#         <h2>📑 {title}</h2>
-#         <p>
-#           내부 분석 보고서가 완료되었습니다.<br/>
-#           첨부된 PDF 파일을 확인해주세요.
-#         </p>
-
-#         <ul>
-#           <li>📘 최종보고서.pdf</li>
-#           <li>📗 데이터출처모음.pdf</li>
-#         </ul>
-
-#         <hr/>
-        
-#         <hr/>
-#         <p style="font-size:13px;color:#777;">
-#           ※ 본 보고서는 내부 검토용입니다.<br/>
-#           부동산 마케팅 협회 자동화 리포트 시스템 (RAG_COMMANDER)
-#         </p>
-#       </body>
-#     </html>
-#     """
-
-#     # Gmail 메시지 구성
-#     message = MIMEMultipart()
-#     message["to"] = to
-#     message["subject"] = title
-#     message.attach(MIMEText(html_body, "html", "utf-8"))
-
-#     # PDF 첨부
-#     for file_path in [final_pdf_path, source_pdf_path]:
-#         if file_path == final_pdf_path:
-#             file_name = "최종보고서.pdf"
-#         else:
-#             file_name = "데이터출처모음.pdf"
-
-#         if os.path.exists(file_path):
-#             with open(file_path, "rb") as f:
-#                 part = MIMEBase("application", "pdf")
-#                 part.set_payload(f.read())
-#             encoders.encode_base64(part)
-#             part.add_header(
-#                 "Content-Disposition",
-#                 f'attachment; filename="{file_name}"'
-#             )
-#             message.attach(part)
-
-#     raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
-#     body = {"raw": raw}
-#     send = service.users().messages().send(userId="me", body=body).execute()
-#     print(f"✅ 메일 전송 완료 → {to} (ID: {send['id']})")
