@@ -41,7 +41,7 @@ if submitted:
     with st.spinner("⏳ 보고서를 생성 중입니다... 잠시만 기다려주세요. (13 ~ 15분소요)"):
         try:
             response = requests.post(
-                "http://localhost:8000/invoke",  # FastAPI의 POST 엔드포인트 경로
+                "http://localhost:8080/invoke",  # FastAPI의 POST 엔드포인트 경로
                 json=payload            
             )
             if response.status_code == 200:
