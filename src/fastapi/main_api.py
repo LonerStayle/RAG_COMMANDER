@@ -1,7 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
-from typing import Optional, Union, Dict
-from contextlib import asynccontextmanager
 from fastapi.responses import JSONResponse
 
 from agents.main.main_agent import graph_builder
@@ -36,3 +34,8 @@ async def invoke_graph(request: GraphRequest):
         return GraphResponse(output=result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/")
+def health_check():
+    return {"status": "ok"}

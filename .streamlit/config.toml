@@ -1,0 +1,10 @@
+[server]
+headless = true
+enableCORS = false
+
+[browser]
+gatherUsageStats = false
+
+[client]
+showErrorDetails = false
+toolbarMode = "minimal"  # ← 오른쪽 상단 Deploy 버튼 제거
